@@ -1,0 +1,7 @@
+services:
+  sentinel-m1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./evidence:/sentinel/evidence

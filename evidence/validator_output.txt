@@ -1,0 +1,6 @@
+
+Validating: /home/claude/sentinel-osff/evidence/EP-20260304-m1.json
+Parser 'safe': ✓ PASS
+Parser 'vuln': ✓ PASS
+
+Result: PASS
