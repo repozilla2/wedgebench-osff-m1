@@ -24,7 +24,7 @@ docker run --rm -v "$(pwd)/evidence:/sentinel/evidence" sentinel-m1
 ./run_m1.sh
 ```
 
-All three paths produce the same evidence artifact and validator output.
+All three paths produce the same schema-valid artifact structure and verification outcome.
 
 ---
 
@@ -134,6 +134,7 @@ Key fields:
   "wedge_categories": {
     "wedge_timeout": 0,
     "wedge_no_progress": 0,
+    "wedge_no_heartbeat": 0,
     "wedge_spin": 0
   },
   "latency_scope": "harness_roundtrip",
@@ -142,6 +143,8 @@ Key fields:
     "p50": 6.51,
     "p95": 12.96,
     "p99": 13.65,
+    "min": 0.22,
+    "max": 13.65,
     "n": 39
   }
 }

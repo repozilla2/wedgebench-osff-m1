@@ -2,9 +2,9 @@
   "safe": {
     "schema_version": "1.0.0",
     "harness_version": "osff-m1",
-    "run_timestamp_utc": "2026-03-29T20:03:18.354450Z",
+    "run_timestamp_utc": "2026-03-30T17:53:02.496778Z",
     "parser_under_test": "safe",
-    "firmware_build_id": "untracked-20260329200317",
+    "firmware_build_id": "7d6063ad5198f6949b521f8698566822177899fb",
     "config_hash": "45d3a84679a39104d0a8d824322d4033f828876813750be1ec1d0961d92c3cb3",
     "input_corpus_hash": "aff5be7ed1d0fd2cc7166ca3a0efe8edd6e4ecb5f5bd48c26fb3e104bbe44419",
     "corpus_random_seed": 3735928559,
@@ -23,11 +23,11 @@
     "latency_unit": "us",
     "harness_overhead_note": "Latency includes Python ctypes dispatch and OS scheduling. Not device execution time.",
     "latency_distribution": {
-      "p50": 6.939,
-      "p95": 12.803,
-      "p99": 15.068,
-      "min": 0.353,
-      "max": 15.068,
+      "p50": 9.375,
+      "p95": 20.75,
+      "p99": 21.625,
+      "min": 0.333,
+      "max": 21.625,
       "n": 39
     },
     "wedge_timeout_ms": 1000,
@@ -40,7 +40,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.969,
+        "latency_us": 2.833,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -50,7 +50,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 15.068,
+        "latency_us": 6.458,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -60,7 +60,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 11.866,
+        "latency_us": 1.959,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -70,7 +70,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.003,
+        "latency_us": 1.625,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -80,7 +80,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.095,
+        "latency_us": 1.584,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -90,7 +90,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.918,
+        "latency_us": 3.0,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -100,7 +100,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.52,
+        "latency_us": 2.708,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -110,7 +110,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 7.827,
+        "latency_us": 2.208,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -120,7 +120,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 0.353,
+        "latency_us": 0.333,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -130,7 +130,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.939,
+        "latency_us": 4.083,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -140,7 +140,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.652,
+        "latency_us": 3.375,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -150,7 +150,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 12.803,
+        "latency_us": 3.458,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -160,7 +160,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.927,
+        "latency_us": 4.5,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -170,7 +170,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.887,
+        "latency_us": 6.583,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -180,7 +180,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 12.823,
+        "latency_us": 5.166,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -190,7 +190,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.945,
+        "latency_us": 6.458,
         "frames_accepted": 3,
         "output_bytes": 3
       },
@@ -200,7 +200,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.033,
+        "latency_us": 5.416,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -210,7 +210,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 11.011,
+        "latency_us": 9.375,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -220,7 +220,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.264,
+        "latency_us": 12.166,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -230,7 +230,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.201,
+        "latency_us": 9.0,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -240,7 +240,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.716,
+        "latency_us": 12.583,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -250,7 +250,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.62,
+        "latency_us": 14.666,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -260,7 +260,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 8.86,
+        "latency_us": 10.166,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -270,7 +270,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.9,
+        "latency_us": 15.958,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -280,7 +280,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 8.742,
+        "latency_us": 20.709,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -290,7 +290,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 3.753,
+        "latency_us": 7.583,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -300,7 +300,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 8.392,
+        "latency_us": 14.5,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -310,7 +310,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.045,
+        "latency_us": 13.667,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -320,7 +320,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.099,
+        "latency_us": 16.0,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -330,7 +330,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.149,
+        "latency_us": 9.666,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -340,7 +340,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.987,
+        "latency_us": 16.5,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -350,7 +350,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.074,
+        "latency_us": 14.625,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -360,7 +360,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.573,
+        "latency_us": 20.75,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -370,7 +370,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 11.688,
+        "latency_us": 21.625,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -380,7 +380,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 7.408,
+        "latency_us": 16.083,
         "frames_accepted": 3,
         "output_bytes": 3
       },
@@ -390,7 +390,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.136,
+        "latency_us": 16.333,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -400,7 +400,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.165,
+        "latency_us": 15.583,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -410,7 +410,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.531,
+        "latency_us": 21.167,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -420,7 +420,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.073,
+        "latency_us": 12.042,
         "frames_accepted": 0,
         "output_bytes": 0
       }
@@ -429,9 +429,9 @@
   "vuln": {
     "schema_version": "1.0.0",
     "harness_version": "osff-m1",
-    "run_timestamp_utc": "2026-03-29T20:03:18.787252Z",
+    "run_timestamp_utc": "2026-03-30T17:53:02.984267Z",
     "parser_under_test": "vuln",
-    "firmware_build_id": "untracked-20260329200317",
+    "firmware_build_id": "7d6063ad5198f6949b521f8698566822177899fb",
     "config_hash": "45d3a84679a39104d0a8d824322d4033f828876813750be1ec1d0961d92c3cb3",
     "input_corpus_hash": "aff5be7ed1d0fd2cc7166ca3a0efe8edd6e4ecb5f5bd48c26fb3e104bbe44419",
     "corpus_random_seed": 3735928559,
@@ -450,11 +450,11 @@
     "latency_unit": "us",
     "harness_overhead_note": "Latency includes Python ctypes dispatch and OS scheduling. Not device execution time.",
     "latency_distribution": {
-      "p50": 6.594,
-      "p95": 14.53,
-      "p99": 28.625,
-      "min": 0.56,
-      "max": 28.625,
+      "p50": 14.666,
+      "p95": 21.166,
+      "p99": 134.25,
+      "min": 1.458,
+      "max": 134.25,
       "n": 39
     },
     "wedge_timeout_ms": 1000,
@@ -467,7 +467,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 11.565,
+        "latency_us": 17.375,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -477,7 +477,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 14.53,
+        "latency_us": 14.958,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -487,7 +487,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.997,
+        "latency_us": 9.458,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -497,7 +497,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.88,
+        "latency_us": 15.375,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -507,7 +507,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.234,
+        "latency_us": 13.875,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -517,7 +517,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.757,
+        "latency_us": 14.0,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -527,7 +527,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.108,
+        "latency_us": 14.917,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -537,7 +537,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.133,
+        "latency_us": 14.333,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -547,7 +547,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 0.56,
+        "latency_us": 1.458,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -557,7 +557,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 7.75,
+        "latency_us": 17.125,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -567,7 +567,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.324,
+        "latency_us": 17.958,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -577,7 +577,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.966,
+        "latency_us": 18.0,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -587,7 +587,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.69,
+        "latency_us": 17.417,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -597,7 +597,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 8.438,
+        "latency_us": 20.708,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -607,7 +607,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.194,
+        "latency_us": 24.042,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -617,7 +617,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.262,
+        "latency_us": 19.208,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -627,7 +627,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.803,
+        "latency_us": 11.416,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -637,7 +637,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.397,
+        "latency_us": 12.916,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -647,7 +647,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.221,
+        "latency_us": 20.25,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -657,7 +657,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 11.45,
+        "latency_us": 13.5,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -667,7 +667,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.246,
+        "latency_us": 12.791,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -677,7 +677,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 7.595,
+        "latency_us": 9.416,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -687,7 +687,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 7.275,
+        "latency_us": 15.666,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -697,7 +697,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 28.625,
+        "latency_us": 12.292,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -707,7 +707,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.206,
+        "latency_us": 10.459,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -717,7 +717,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 20.581,
+        "latency_us": 11.958,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -727,7 +727,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.293,
+        "latency_us": 13.875,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -737,7 +737,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.023,
+        "latency_us": 14.666,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -747,7 +747,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.316,
+        "latency_us": 12.666,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -757,7 +757,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.594,
+        "latency_us": 13.458,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -767,7 +767,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.099,
+        "latency_us": 14.292,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -777,7 +777,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 4.724,
+        "latency_us": 14.25,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -787,7 +787,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.409,
+        "latency_us": 15.041,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -797,7 +797,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.103,
+        "latency_us": 21.166,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -807,7 +807,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 6.123,
+        "latency_us": 15.167,
         "frames_accepted": 3,
         "output_bytes": 3
       },
@@ -817,7 +817,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.989,
+        "latency_us": 134.25,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -827,7 +827,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 9.479,
+        "latency_us": 8.958,
         "frames_accepted": 1,
         "output_bytes": 1
       },
@@ -837,7 +837,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 5.757,
+        "latency_us": 15.75,
         "frames_accepted": 0,
         "output_bytes": 0
       },
@@ -847,7 +847,7 @@
         "wedge_type": null,
         "crash": false,
         "heartbeat_ok": true,
-        "latency_us": 10.42,
+        "latency_us": 14.875,
         "frames_accepted": 1,
         "output_bytes": 1
       }

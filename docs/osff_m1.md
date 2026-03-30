@@ -28,7 +28,7 @@ These are frozen. Changing any value requires a new doc revision and schema vers
 | `PROGRESS_WINDOW_MS` | `200` | `docs/wedge_definition.md`, `tools/fuzz_runner.py` |
 | `PROGRESS_POLL_INTERVAL_MS` | `10` | `tools/fuzz_runner.py` |
 | `MAX_PARSE_TIME_MULTIPLIER` | `100` | `docs/wedge_definition.md`, `tools/fuzz_runner.py` |
-| `CORPUS_RANDOM_SEED` | `1234` | `tools/generate_corpus.py` |
+| `CORPUS_RANDOM_SEED` | `3735928559` (`0xDEADBEEF`) | `tools/generate_corpus.py` |
 | `SCHEMA_VERSION` | `"1.0.0"` | evidence JSON, `tools/validate_evidence.py` |
 
 ---
@@ -110,7 +110,7 @@ make reproduce
 - No pip dependencies (stdlib only for harness)
 
 `docker compose run sentinel-m1` runs `./run_m1.sh` inside the container, which:
-1. Generates corpus (fixed seed `1234`)
+1. Generates corpus (fixed seed `3735928559` (`0xDEADBEEF`))
 2. Compiles `parser_target.c`
 3. Runs fuzz harness
 4. Validates evidence artifact
@@ -133,7 +133,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
   "firmware_build_id":      "string — git SHA (40 hex chars) from 'git rev-parse HEAD', or 'untracked-YYYYMMDDHHMMSS' if run outside a git repo. Submitted artifact is always regenerated post-tag so this field contains the tag SHA.",
   "config_hash":            "string — SHA-256 of JSON-serialized locked constants dict with keys in sorted order: {HARNESS_VERSION, MAX_PARSE_TIME_MULT, PROGRESS_POLL_INTERVAL, PROGRESS_WINDOW_MS, SCHEMA_VERSION, WEDGE_TIMEOUT_MS}. Independently reproducible from constants in docs/wedge_definition.md.",
   "input_corpus_hash":      "string — SHA-256 of all corpus file content in sorted order",
-  "corpus_random_seed":     "integer — must be 1234",
+  "corpus_random_seed":     "integer — must be 3735928559 (0xDEADBEEF)",
   "cases_count":            "integer >= 0 — number of corpus cases",
   "trial_count":            "integer >= 0 — must equal cases_count for M1",
   "enforcement_count":      "integer >= 0 — must equal wedge_count + crash_count",
@@ -182,7 +182,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 - `len(per_case_results) == trial_count`
 - `sum(r.wedge for r in per_case_results) == wedge_count`
 - `sum(r.crash for r in per_case_results) == crash_count`
-- `corpus_random_seed == 1234`
+- `corpus_random_seed == 3735928559` (0xDEADBEEF)
 - `wedge_timeout_ms == 1000`
 - `progress_window_ms == 200`
 - `latency_scope == 'harness_roundtrip'`
@@ -205,7 +205,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 
 Notes:
 - `PROGRESS_POLL_INTERVAL` is in seconds (`0.01` = 10ms).
-- `CORPUS_RANDOM_SEED` is captured in the evidence artifact as `corpus_random_seed` but is not part of `config_hash` in the current implementation.
+- `CORPUS_RANDOM_SEED` (`3735928559`, i.e. `0xDEADBEEF`) is captured in the evidence artifact as `corpus_random_seed` but is not part of `config_hash` in the current implementation.
 
 To independently verify: serialize this dict with `json.dumps(config, sort_keys=True).encode()` and compute SHA-256.
 
@@ -213,7 +213,7 @@ To independently verify: serialize this dict with `json.dumps(config, sort_keys=
 
 ## 7. Corpus Categories (Locked)
 
-39 seed cases generated deterministically from `CORPUS_RANDOM_SEED = 1234`.
+39 seed cases generated deterministically from `CORPUS_RANDOM_SEED = 3735928559` (`0xDEADBEEF`).
 
 | # | Category | Cases | Description |
 |---|---|---|---|
@@ -244,7 +244,7 @@ M1 tag `osff-m1` must contain:
 - [ ] `src/parser_target.c` — safe + vuln variants, progress instrumented
 - [ ] `tools/fuzz_runner.py` — harness with heartbeat injection, output-byte progress
 - [ ] `tools/validate_evidence.py` — all invariants above enforced
-- [ ] `tools/generate_corpus.py` — seed=1234, deterministic
+- [ ] `tools/generate_corpus.py` — seed=3735928559 (0xDEADBEEF), deterministic
 - [ ] `Dockerfile` + `docker-compose.yml` — pinned environment
 - [ ] `Makefile` — `make reproduce` target
 - [ ] `run_m1.sh` — called inside Docker

@@ -7,7 +7,7 @@ Validates a fuzz run evidence JSON against the M1 schema:
   - Non-negative integer constraints
   - Percentile ordering: p50 <= p95 <= p99
   - Latency sample count consistency
-  - Wedge category sum <= wedge_count
+  - Wedge category sum == wedge_count
   - Schema version check
 
 Usage:
@@ -46,11 +46,11 @@ REQUIRED_TOP_LEVEL = {
     "latency_distribution":   dict,
     "wedge_timeout_ms":       int,
     "progress_window_ms":     int,
+    "harness_version":        str,
 }
 
 # OPTIONAL fields — validated if present, warned if absent
 OPTIONAL_TOP_LEVEL = {
-    "harness_version":        str,
     "run_timestamp_utc":      str,
     "parser_under_test":      str,
     "enforcement_count":      int,
@@ -74,11 +74,13 @@ LATENCY_DIST_FIELDS = {
     "p95": (float, type(None)),
     "p99": (float, type(None)),
     "n":   int,
+    "min": (float, int),
+    "max": (float, int),
 }
 
 # Locked constants — deviations are hard validation errors
 LOCKED_CONSTANTS = {
-    "corpus_random_seed": 1234,
+    "corpus_random_seed": 3735928559,
     "wedge_timeout_ms":   1000,
     "progress_window_ms": 200,
     "latency_scope":      "harness_roundtrip",
@@ -149,8 +151,8 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
     # ── cases_count consistency ───────────────────────────────────────────
     if "cases_count" in ev and "trial_count" in ev:
         if ev["cases_count"] != ev["trial_count"]:
-            r.warn(f"{label}cases_count ({ev['cases_count']}) != "
-                   f"trial_count ({ev['trial_count']}). Expected equal for M1.")
+            r.error(f"{label}cases_count ({ev['cases_count']}) != "
+                    f"trial_count ({ev['trial_count']}): must be equal for M1.")
 
     # ── Optional fields: type-check if present ────────────────────────────
     for field, expected_type in OPTIONAL_TOP_LEVEL.items():
@@ -223,8 +225,8 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
             elif not isinstance(wc[field], int) or wc[field] < 0:
                 r.error(f"{label}wedge_categories.{field} must be int >= 0")
         cat_sum = sum(wc.get(f, 0) for f in WEDGE_CATEGORY_FIELDS)
-        if cat_sum > wedge_count:
-            r.error(f"{label}wedge_categories sum ({cat_sum}) > wedge_count ({wedge_count})")
+        if cat_sum != wedge_count:
+            r.error(f"{label}wedge_categories sum ({cat_sum}) != wedge_count ({wedge_count})")
 
     # ── enforcement_count (optional — only validated if present) ──────────
     if "enforcement_count" in ev and "crash_count" in ev:

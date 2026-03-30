@@ -16,7 +16,7 @@ Constants (LOCKED — must match docs/wedge_definition.md and docs/osff_m1.md):
     WEDGE_TIMEOUT_MS        1000
     PROGRESS_WINDOW_MS      200
     MAX_PARSE_TIME_MULT     100
-    CORPUS_RANDOM_SEED      1234
+    CORPUS_RANDOM_SEED      3735928559
     PROGRESS_POLL_INTERVAL  0.010  (10ms)
 """
 
@@ -42,11 +42,11 @@ MAX_PARSE_TIME_MULT     = 100      # max ms per input byte
 PROGRESS_POLL_INTERVAL  = 0.010   # 10ms
 
 # ─── Corpus constants ─────────────────────────────────────────────────────────
-CORPUS_RANDOM_SEED      = 1234    # LOCKED: determinism anchor
+CORPUS_RANDOM_SEED      = 3735928559    # LOCKED: 0xDEADBEEF — matches generate_corpus.py
 
 # ─── Paths ───────────────────────────────────────────────────────────────────
 REPO_ROOT    = Path(__file__).parent.parent
-SRC_DIR      = REPO_ROOT / "src"
+SRC_DIR      = REPO_ROOT / "tools"
 CORPUS_DIR   = REPO_ROOT / "corpus"
 EVIDENCE_DIR = REPO_ROOT / "evidence"
 LIB_PATH     = REPO_ROOT / "build" / "libparser.so"
@@ -305,7 +305,10 @@ def run_trial(lib: ctypes.CDLL, data: bytes, parser_type: str) -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def compute_build_id() -> str:
-    """Git SHA of HEAD, or 'untracked' if not in a git repo."""
+    """Git SHA of HEAD.
+    Priority: (1) git rev-parse HEAD, (2) SENTINEL_GIT_SHA env var (set by
+    Docker build arg), (3) untracked-<timestamp> fallback.
+    """
     try:
         r = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -315,6 +318,10 @@ def compute_build_id() -> str:
             return r.stdout.strip()
     except FileNotFoundError:
         pass
+    # Docker build injects GIT_SHA via ARG -> ENV SENTINEL_GIT_SHA
+    env_sha = os.environ.get("SENTINEL_GIT_SHA", "")
+    if env_sha and env_sha != "untracked":
+        return env_sha
     return "untracked-" + datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).strftime("%Y%m%d%H%M%S")
 
 

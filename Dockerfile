@@ -1,13 +1,18 @@
 FROM ubuntu:24.04
 
-# Pinned versions for reproducibility
+# No version pinning — ensures compatibility across x86 and ARM (Apple Silicon)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc=4:13.2.0-7ubuntu1 \
-    python3=3.12.3-0ubuntu2 \
+    gcc \
+    libc6-dev \
+    python3 \
     python3-pip \
     make \
     git \
     && rm -rf /var/lib/apt/lists/*
+
+# Accept git SHA at build time — avoids copying .git into the image
+ARG GIT_SHA=untracked
+ENV SENTINEL_GIT_SHA=${GIT_SHA}
 
 WORKDIR /sentinel
 
