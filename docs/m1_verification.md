@@ -13,7 +13,7 @@ No other dependencies required.
 
 ```bash
 git clone <repo-url>
-cd sentinel-osff
+cd wedgebench-osff-m1
 docker compose run sentinel-m1
 ```
 

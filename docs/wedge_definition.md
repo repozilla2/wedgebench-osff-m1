@@ -40,12 +40,13 @@ sampling window. This catches tight busy-loops that do not trip the wall-clock t
 
 ## Wedge Categories
 
-The harness distinguishes and reports three wedge subtypes:
+The harness distinguishes and reports four wedge subtypes:
 
 | Category | Code | Description |
 |---|---|---|
 | Timeout | `wedge_timeout` | Wall-clock timeout exceeded, progress state unknown |
 | No-progress | `wedge_no_progress` | Progress counter stalled within timeout window |
+| No-heartbeat | `wedge_no_heartbeat` | Heartbeat frame not accepted after parser reset |
 | Spin | `wedge_spin` | Reserved — not implemented in M1; always 0 |
 
 All three are summed into `wedge_count` in the evidence artifact. Category breakdown is
@@ -62,7 +63,7 @@ Changing these constants changes the wedge definition; do so only with documenta
 |---|---|---|
 | `WEDGE_TIMEOUT_MS` | 1000 | Max wall-clock time per trial before timeout wedge |
 | `PROGRESS_WINDOW_MS` | 200 | Sampling window for no-progress detection |
-| `MAX_PARSE_TIME_MULTIPLIER` | 100 | Max allowed ms per input byte (anti-slow-drain) |
+| `MAX_PARSE_TIME_MULT` | 100 | Max allowed ms per input byte (anti-slow-drain) |
 | `PROGRESS_POLL_INTERVAL_MS` | 10 | How often harness polls bytes-consumed counter |
 
 ### Anti-Slow-Drain Rule
@@ -70,7 +71,7 @@ Changing these constants changes the wedge definition; do so only with documenta
 A trial that technically makes byte-level progress but at a rate slower than:
 
 ```
-MAX_PARSE_TIME_MULTIPLIER × input_length_bytes ms
+MAX_PARSE_TIME_MULT × input_length_bytes ms
 ```
 
 is flagged as a `wedge_timeout` regardless of bytes-consumed counter. This prevents a parser

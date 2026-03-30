@@ -30,7 +30,7 @@ All three paths produce the same schema-valid artifact structure and verificatio
 
 ## Verification Notes for Reviewers
 
-**Firmware Build ID** — `firmware_build_id` is populated from `git rev-parse HEAD` (or `SENTINEL_GIT_SHA` Docker build arg). The submitted artifact is regenerated after tagging `osff-m1.3` so this field contains the tag commit SHA. Artifacts generated between tags show an intermediate commit SHA — this is expected and not an error.
+**Firmware Build ID** — `firmware_build_id` is populated from `git rev-parse HEAD` (or `SENTINEL_GIT_SHA` Docker build arg). The submitted artifact is regenerated after tagging `osff-m1.3` so this field contains the exact tag name (e.g. `osff-m1.3`). Artifacts generated between tags show an intermediate commit SHA — this is expected and not an error.
 
 **Why vuln divergence is measured by correctness, not wedge count** — The vuln variant
 demonstrates real semantic defects visible in `per_case_results`: `zero_length_valid_chk`
