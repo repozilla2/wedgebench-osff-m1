@@ -68,4 +68,4 @@ Open `evidence/EP-<date>-m1.json` and confirm:
 | `wedge_timeout_ms` | `1000` |
 | `progress_window_ms` | `200` |
 | `latency_scope` | `"harness_roundtrip"` |
-| `firmware_build_id` | git SHA of tagged commit |
+| `firmware_build_id` | `osff-m1.3` (exact tag name) |

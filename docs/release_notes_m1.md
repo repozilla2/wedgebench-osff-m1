@@ -17,7 +17,7 @@ under malformed input, with schema-locked evidence artifacts and a strict valida
 | Schema validator | `tools/validate_evidence.py` |
 | Corpus generator | `tools/generate_corpus.py` |
 | Reference parser (safe + vuln) | `tools/parser_target.c` |
-| Evidence artifact | `evidence/EP-YYYYMMDD-m1.json` (generated from tagged commit `osff-m1.3`; `firmware_build_id` equals the tag SHA) |
+| Evidence artifact | `evidence/EP-YYYYMMDD-m1.json` (generated from tagged commit `osff-m1.3`; `firmware_build_id` equals the tag name (e.g. `osff-m1.3`)) |
 | Reproducible environment | `Dockerfile`, `docker-compose.yml` |
 
 ## Verification

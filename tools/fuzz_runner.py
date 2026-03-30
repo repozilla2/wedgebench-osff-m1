@@ -305,11 +305,25 @@ def run_trial(lib: ctypes.CDLL, data: bytes, parser_type: str) -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def compute_build_id() -> str:
-    """Git SHA of HEAD.
-    Priority: (1) git rev-parse HEAD, (2) SENTINEL_GIT_SHA env var (set by
-    Docker build arg), (3) untracked-<timestamp> fallback.
+    """Return the build identity for this harness run.
+
+    Priority:
+      1. Exact git tag pointing at HEAD (e.g. osff-m1.3) — stable across
+         the post-tag evidence commit, solves the chicken-and-egg problem
+         where the artifact SHA changes when the artifact is committed.
+      2. SENTINEL_GIT_SHA env var (injected by Docker build arg).
+      3. Short git SHA of HEAD.
+      4. untracked-<timestamp> fallback.
     """
     try:
+        # Prefer an exact tag name — it doesn't change when artifact is committed
+        r = subprocess.run(
+            ["git", "describe", "--exact-match", "--tags", "HEAD"],
+            capture_output=True, text=True, cwd=REPO_ROOT
+        )
+        if r.returncode == 0:
+            return r.stdout.strip()
+        # Fall back to full SHA
         r = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             capture_output=True, text=True, cwd=REPO_ROOT
@@ -320,9 +334,10 @@ def compute_build_id() -> str:
         pass
     # Docker build injects GIT_SHA via ARG -> ENV SENTINEL_GIT_SHA
     env_sha = os.environ.get("SENTINEL_GIT_SHA", "")
-    if env_sha and env_sha != "untracked":
+    if env_sha and env_sha not in ("untracked", ""):
         return env_sha
-    return "untracked-" + datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).strftime("%Y%m%d%H%M%S")
+    return "untracked-" + datetime.datetime.now(
+        datetime.timezone.utc).replace(tzinfo=None).strftime("%Y%m%d%H%M%S")
 
 
 def compute_config_hash() -> str:
