@@ -61,7 +61,7 @@ Open `evidence/EP-<date>-m1.json` and confirm:
 | Field | Expected value |
 |---|---|
 | `schema_version` | `"1.0.0"` |
-| `corpus_random_seed` | `1234` |
+| `corpus_random_seed` | `3735928559` |
 | `cases_count` | `39` |
 | `trial_count` | `39` |
 | `wedge_count` (safe) | `0` |

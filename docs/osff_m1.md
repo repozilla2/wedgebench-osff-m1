@@ -8,7 +8,7 @@
 
 M1 is complete when OSFF can:
 
-1. Check out tagged release `osff-m1.2`
+1. Check out tagged release `osff-m1.3`
 2. Run `docker compose run sentinel-m1` (one command)
 3. Receive a schema-valid evidence JSON
 4. Observe `wedge_count`, `latency_distribution`, declared `latency_unit` and `latency_scope`
@@ -79,7 +79,7 @@ All three sum to `wedge_count`. What is NOT a wedge: clean rejection, error retu
 
 **In-process simulator via ctypes.**
 
-The reference C parser (`src/parser_target.c`) is compiled to a shared library and loaded
+The reference C parser (`tools/parser_target.c`) is compiled to a shared library and loaded
 via Python ctypes. No subprocess, no IPC, no timing noise from OS scheduling between
 processes. Deterministic. Reproducible on any machine with gcc + Python 3.10+.
 
@@ -127,7 +127,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 ```json
 {
   "schema_version":         "string — required, must be '1.0.0'",
-  "harness_version":        "string — required, e.g. 'osff-m1.2'",
+  "harness_version":        "string — required, e.g. 'osff-m1.3'",
   "run_timestamp_utc":      "string — ISO 8601, e.g. '2026-03-02T14:00:00Z'",
   "parser_under_test":      "string — enum: 'safe' | 'vuln'",
   "firmware_build_id":      "string — git SHA (40 hex chars) from 'git rev-parse HEAD', or 'untracked-YYYYMMDDHHMMSS' if run outside a git repo. Submitted artifact is always regenerated post-tag so this field contains the tag SHA.",
@@ -194,7 +194,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 
 ```json
 {
-  "HARNESS_VERSION": "osff-m1.2",
+  "HARNESS_VERSION": "osff-m1",
   "MAX_PARSE_TIME_MULT": 100,
   "PROGRESS_POLL_INTERVAL": 0.01,
   "PROGRESS_WINDOW_MS": 200,
@@ -237,11 +237,11 @@ by the harness. `heartbeat_ok` in per-case results records whether it was accept
 
 ## 8. Deliverable Checklist
 
-M1 tag `osff-m1.2` must contain:
+M1 tag `osff-m1.3` must contain:
 
 - [ ] `docs/wedge_definition.md` — formal spec matching this document
 - [ ] `docs/osff_m1.md` — this file
-- [ ] `src/parser_target.c` — safe + vuln variants, progress instrumented
+- [ ] `tools/parser_target.c` — safe + vuln variants, progress instrumented
 - [ ] `tools/fuzz_runner.py` — harness with heartbeat injection, output-byte progress
 - [ ] `tools/validate_evidence.py` — all invariants above enforced
 - [ ] `tools/generate_corpus.py` — seed=3735928559 (0xDEADBEEF), deterministic

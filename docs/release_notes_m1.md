@@ -1,5 +1,5 @@
 # OSFF Milestone 1 — Release Notes
-**Tag:** `osff-m1.2`
+**Tag:** `osff-m1.3`
 **Date:** March 2026
 
 ---
@@ -16,8 +16,8 @@ under malformed input, with schema-locked evidence artifacts and a strict valida
 | Fuzz harness | `tools/fuzz_runner.py` |
 | Schema validator | `tools/validate_evidence.py` |
 | Corpus generator | `tools/generate_corpus.py` |
-| Reference parser (safe + vuln) | `src/parser_target.c` |
-| Evidence artifact | `evidence/EP-YYYYMMDD-m1.json` (generated from tagged commit `osff-m1.2`; `firmware_build_id` equals the tag SHA) |
+| Reference parser (safe + vuln) | `tools/parser_target.c` |
+| Evidence artifact | `evidence/EP-YYYYMMDD-m1.json` (generated from tagged commit `osff-m1.3`; `firmware_build_id` equals the tag SHA) |
 | Reproducible environment | `Dockerfile`, `docker-compose.yml` |
 
 ## Verification

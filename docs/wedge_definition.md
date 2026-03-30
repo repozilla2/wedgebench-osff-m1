@@ -108,7 +108,7 @@ from the fuzz phase itself — only the post-reset heartbeat acceptance test gat
 ## Progress Instrumentation
 
 Progress is measured as **bytes consumed** by the parser (`g_parser_bytes_consumed`), not
-output bytes. The reference parser (`src/parser_target.c`) exposes:
+output bytes. The reference parser (`tools/parser_target.c`) exposes:
 
 ```c
 extern volatile size_t g_parser_bytes_consumed;
