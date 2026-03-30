@@ -85,7 +85,7 @@ processes. Deterministic. Reproducible on any machine with gcc + Python 3.10+.
 
 Two variants ship:
 - `parser_safe_*` — hardened reference, expected `wedge_count: 0` across all corpus cases
-- `parser_vuln_*` — intentional defects demonstrable via behavioral divergence in `per_case_results`. The `zero_length_valid_chk` case produces the clearest divergence: vuln accepts a zero-length frame (`frames_accepted=1`) that safe correctly rejects (`frames_accepted=0`). This is a real semantic defect — vuln lacks the zero-length rejection guard present in safe. Timing-based wedge detection of the unbounded SOF loop requires input sizes not practical in M1; that is explicitly M2 scope. The safe parser's `wedge_count: 0` and correct frame rejection are the primary M1 correctness claims.
+- `parser_vuln_*` — intentional defects demonstrable via behavioral divergence in `per_case_results`. The `zero_length_valid_chk` case produces the clearest divergence: vuln accepts a zero-length frame (`frames_accepted=1`) that safe correctly rejects (`frames_accepted=0`). This is a real semantic defect — vuln lacks the zero-length rejection guard present in safe. Timing-based wedge detection of the unguarded SOF loop requires input sizes not practical in M1; that is explicitly M2 scope. The safe parser's `wedge_count: 0` and correct frame rejection are the primary M1 correctness claims.
 
 Persistent subprocess target is explicitly deferred to M2.
 

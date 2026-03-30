@@ -35,7 +35,7 @@ All three paths produce the same schema-valid artifact structure and verificatio
 **Why vuln divergence is measured by correctness, not wedge count** — The vuln variant
 demonstrates real semantic defects visible in `per_case_results`: `zero_length_valid_chk`
 shows vuln accepting a frame safe correctly rejects (safe `frames_accepted`=0, vuln=1).
-Timing-based wedge detection of the unbounded SOF loop requires impractically large inputs;
+Timing-based wedge detection of the unguarded SOF loop requires impractically large inputs;
 that is M2 scope. Behavioral divergence via frame acceptance counts is the M1 demonstration.
 
 **What wedge_count=0 proves** — A `wedge_count` of 0 means the safe parser correctly returns to a functional IDLE state after every malformed input, verified via post-reset heartbeat acceptance. It is not a trivial result: a parser with corrupted internal state after malformed input will fail the heartbeat even after reset. The harness's ability to detect incorrect behavior is demonstrated by the vuln parser's `frames_accepted=1` on `zero_length_valid_chk` — a case safe correctly rejects.
@@ -194,11 +194,11 @@ The validator script (`validate_evidence.py`) is the machine-readable acceptance
 - Progress counter incremented on every byte
 
 **`parser_vuln_*`** — Intentionally defective implementation:
-- Unbounded SOF search loop (wedge-able with non-SOF garbage bursts)
+- SOF search loop without an iteration guard (degraded behavior risk on large non-SOF bursts)
 - No LEN upper-bound check (out-of-bounds write on LEN=255)
 - Demonstrates the failure modes the safe parser prevents
 
-The M1 corpus produces observable behavioral divergence between safe and vuln. The clearest case: `zero_length_valid_chk` — vuln accepts a zero-length frame (`frames_accepted=1`) that safe correctly rejects (`frames_accepted=0`). This is a real semantic defect visible in the evidence artifact without any synthetic injection. Timing-based wedge detection of the unbounded SOF loop requires input sizes impractical for a serial parser corpus; exhaustive vuln stress testing is M2 scope. The safe parser reports `wedge_count: 0` across all cases; this is the primary M1 claim.
+The M1 corpus produces observable behavioral divergence between safe and vuln. The clearest case: `zero_length_valid_chk` — vuln accepts a zero-length frame (`frames_accepted=1`) that safe correctly rejects (`frames_accepted=0`). This is a real semantic defect visible in the evidence artifact without any synthetic injection. Timing-based wedge detection of the unguarded SOF loop requires input sizes impractical for a serial parser corpus; exhaustive vuln stress testing is M2 scope. The safe parser reports `wedge_count: 0` across all cases; this is the primary M1 claim.
 
 ---
 
