@@ -231,7 +231,9 @@ To independently verify: serialize this dict with `json.dumps(config, sort_keys=
 | 12 | Single bytes | 4 | SOF, null, 0xFF, 0x55 |
 
 Each malformed case (categories 2–12) is followed by a heartbeat valid frame injection
-by the harness. `heartbeat_ok` in per-case results records whether it was accepted.
+by the harness.
+
+**Note:** `partial_frame_cut1`, `partial_frame_sof_only`, and `single_single_sof` are byte-identical (all `0xAA` — the SOF byte). This is a protocol constraint: any 1-byte truncation of a valid frame is the SOF byte. The three cases are counted separately for categorical coverage (partial frames vs. single bytes) and their filenames contribute distinctly to `input_corpus_hash`. `heartbeat_ok` in per-case results records whether it was accepted.
 
 ---
 

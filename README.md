@@ -108,7 +108,7 @@ The corpus covers all required malformed traffic patterns:
 | Empty input | 1 | Zero-byte input |
 | Single bytes | 4 | SOF, null, 0xFF, 0x55 |
 
-**Total: 39 cases**
+**Total: 39 cases** — Note: `partial_frame_cut1`, `partial_frame_sof_only`, and `single_single_sof` are byte-identical (`0xAA` — SOF byte, a protocol constraint). All three are counted as distinct named cases for categorical coverage.
 
 ---
 
@@ -175,7 +175,7 @@ Exit code `0` = PASS, `1` = FAIL.
 Milestone 1 is complete when an independent reviewer can:
 
 1. Check out the tagged release `osff-m1.3`
-2. Run `./run_m1.sh`
+2. Run `docker compose run sentinel-m1`
 3. Receive a schema-valid evidence JSON including `wedge_count`, `latency_distribution`,
    and `latency_unit`
 
