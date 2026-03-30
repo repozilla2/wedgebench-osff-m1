@@ -30,9 +30,7 @@ All three paths produce the same schema-valid artifact structure and verificatio
 
 ## Verification Notes for Reviewers
 
-**Firmware Build ID** — `firmware_build_id` is populated from `git rev-parse HEAD`.
-Pre-tag runs show `untracked-<timestamp>`. The submitted artifact is regenerated after
-tagging `osff-m1` so this field contains the real commit SHA.
+**Firmware Build ID** — `firmware_build_id` is populated from `git rev-parse HEAD` (or `SENTINEL_GIT_SHA` Docker build arg). The submitted artifact is regenerated after tagging `osff-m1.2` so this field contains the tag commit SHA. Artifacts generated between tags show an intermediate commit SHA — this is expected and not an error.
 
 **Why vuln divergence is measured by correctness, not wedge count** — The vuln variant
 demonstrates real semantic defects visible in `per_case_results`: `zero_length_valid_chk`
@@ -150,7 +148,7 @@ Key fields:
 }
 ```
 
-**Note on `firmware_build_id`:** Populated from `git rev-parse HEAD` at run time. Pre-tag runs show `untracked-<timestamp>`. The submitted evidence artifact is always regenerated after tagging `osff-m1`, so the submitted JSON will contain the actual tag SHA.
+**Note on `firmware_build_id`:** Populated from `git rev-parse HEAD` at run time. Pre-tag runs show `untracked-<timestamp>`. The submitted evidence artifact is regenerated after tagging `osff-m1.2`. The `firmware_build_id` in the committed artifact reflects the commit at build time; the final submission artifact is generated from the tagged commit so both will match.
 
 **Note on `config_hash`:** SHA-256 of the JSON-serialized locked constants `{"HARNESS_VERSION":..., "MAX_PARSE_TIME_MULT":..., "PROGRESS_POLL_INTERVAL":..., "PROGRESS_WINDOW_MS":..., "SCHEMA_VERSION":..., "WEDGE_TIMEOUT_MS":...}` with keys in sorted order. Independently reproducible from the constants listed in `docs/wedge_definition.md`. means these measurements include
 Python ctypes overhead and OS scheduling. They are **not** device execution times.
@@ -170,7 +168,7 @@ The validator checks:
 - Percentile ordering: p50 ≤ p95 ≤ p99
 - Latency `n` ≤ `trial_count`
 - `enforcement_count` == `wedge_count` + `crash_count`
-- `wedge_categories` sum ≤ `wedge_count`
+- `wedge_categories` sum == `wedge_count`
 - Per-case result counts match top-level counters
 
 Exit code `0` = PASS, `1` = FAIL.
@@ -181,7 +179,7 @@ Exit code `0` = PASS, `1` = FAIL.
 
 Milestone 1 is complete when an independent reviewer can:
 
-1. Check out the tagged release `osff-m1`
+1. Check out the tagged release `osff-m1.2`
 2. Run `./run_m1.sh`
 3. Receive a schema-valid evidence JSON including `wedge_count`, `latency_distribution`,
    and `latency_unit`

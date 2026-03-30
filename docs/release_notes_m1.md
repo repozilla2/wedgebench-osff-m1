@@ -1,5 +1,5 @@
 # OSFF Milestone 1 — Release Notes
-**Tag:** `osff-m1`
+**Tag:** `osff-m1.2`
 **Date:** March 2026
 
 ---
@@ -17,7 +17,7 @@ under malformed input, with schema-locked evidence artifacts and a strict valida
 | Schema validator | `tools/validate_evidence.py` |
 | Corpus generator | `tools/generate_corpus.py` |
 | Reference parser (safe + vuln) | `src/parser_target.c` |
-| Evidence artifact | `evidence/EP-YYYYMMDD-m1.json` (generated from tagged commit `osff-m1`; `firmware_build_id` equals the tag SHA) |
+| Evidence artifact | `evidence/EP-YYYYMMDD-m1.json` (generated from tagged commit `osff-m1.2`; `firmware_build_id` equals the tag SHA) |
 | Reproducible environment | `Dockerfile`, `docker-compose.yml` |
 
 ## Verification
@@ -56,7 +56,7 @@ Typical runtime: ~1 second on a laptop (39 trials).
 
 ## Corpus
 
-39 deterministic seed cases, generated from `CORPUS_RANDOM_SEED = 1234`.
+39 deterministic seed cases, generated from `CORPUS_RANDOM_SEED = 3735928559` (`0xDEADBEEF`).
 Corpus binaries committed to `corpus/`. Hash bound to evidence artifact via
 `input_corpus_hash` field.
 
@@ -67,7 +67,7 @@ Corpus binaries committed to `corpus/`. Hash bound to evidence artifact via
 | `WEDGE_TIMEOUT_MS` | 1000 |
 | `PROGRESS_WINDOW_MS` | 200 |
 | `MAX_PARSE_TIME_MULT` | 100 |
-| `CORPUS_RANDOM_SEED` | 1234 |
+| `CORPUS_RANDOM_SEED` | 3735928559 |
 | `SCHEMA_VERSION` | `1.0.0` |
 
 ## What This Milestone Does Not Claim

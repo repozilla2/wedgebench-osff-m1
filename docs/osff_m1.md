@@ -8,7 +8,7 @@
 
 M1 is complete when OSFF can:
 
-1. Check out tagged release `osff-m1`
+1. Check out tagged release `osff-m1.2`
 2. Run `docker compose run sentinel-m1` (one command)
 3. Receive a schema-valid evidence JSON
 4. Observe `wedge_count`, `latency_distribution`, declared `latency_unit` and `latency_scope`
@@ -105,8 +105,8 @@ make reproduce
 
 `Dockerfile` pins:
 - Ubuntu 24.04 LTS base
-- Python 3.12 exact
-- gcc version
+- Python 3.12 (current in Ubuntu 24.04 LTS; package version floats with apt)
+- gcc (current in Ubuntu 24.04 apt; no strict version pin)
 - No pip dependencies (stdlib only for harness)
 
 `docker compose run sentinel-m1` runs `./run_m1.sh` inside the container, which:
@@ -127,7 +127,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 ```json
 {
   "schema_version":         "string — required, must be '1.0.0'",
-  "harness_version":        "string — required, e.g. 'osff-m1'",
+  "harness_version":        "string — required, e.g. 'osff-m1.2'",
   "run_timestamp_utc":      "string — ISO 8601, e.g. '2026-03-02T14:00:00Z'",
   "parser_under_test":      "string — enum: 'safe' | 'vuln'",
   "firmware_build_id":      "string — git SHA (40 hex chars) from 'git rev-parse HEAD', or 'untracked-YYYYMMDDHHMMSS' if run outside a git repo. Submitted artifact is always regenerated post-tag so this field contains the tag SHA.",
@@ -178,7 +178,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 - `p50 <= p95 <= p99` (ordering check)
 - `latency_distribution.n <= trial_count`
 - `enforcement_count == wedge_count + crash_count`
-- `sum(wedge_categories.values()) <= wedge_count`
+- `sum(wedge_categories.values()) == wedge_count`
 - `len(per_case_results) == trial_count`
 - `sum(r.wedge for r in per_case_results) == wedge_count`
 - `sum(r.crash for r in per_case_results) == crash_count`
@@ -194,7 +194,7 @@ Evidence artifact is written to `/evidence/` volume-mounted to host.
 
 ```json
 {
-  "HARNESS_VERSION": "osff-m1",
+  "HARNESS_VERSION": "osff-m1.2",
   "MAX_PARSE_TIME_MULT": 100,
   "PROGRESS_POLL_INTERVAL": 0.01,
   "PROGRESS_WINDOW_MS": 200,
@@ -237,7 +237,7 @@ by the harness. `heartbeat_ok` in per-case results records whether it was accept
 
 ## 8. Deliverable Checklist
 
-M1 tag `osff-m1` must contain:
+M1 tag `osff-m1.2` must contain:
 
 - [ ] `docs/wedge_definition.md` — formal spec matching this document
 - [ ] `docs/osff_m1.md` — this file
@@ -245,7 +245,7 @@ M1 tag `osff-m1` must contain:
 - [ ] `tools/fuzz_runner.py` — harness with heartbeat injection, output-byte progress
 - [ ] `tools/validate_evidence.py` — all invariants above enforced
 - [ ] `tools/generate_corpus.py` — seed=3735928559 (0xDEADBEEF), deterministic
-- [ ] `Dockerfile` + `docker-compose.yml` — pinned environment
+- [ ] `Dockerfile` + `docker-compose.yml` — reproducible Ubuntu 24.04 environment (no version pinning; ARM/x86 portable)
 - [ ] `Makefile` — `make reproduce` target
 - [ ] `run_m1.sh` — called inside Docker
 - [ ] `corpus/*.bin` — 39 cases committed
