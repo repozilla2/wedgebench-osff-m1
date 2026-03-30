@@ -239,18 +239,18 @@ by the harness. `heartbeat_ok` in per-case results records whether it was accept
 
 M1 tag `osff-m1.3` must contain:
 
-- [ ] `docs/wedge_definition.md` — formal spec matching this document
-- [ ] `docs/osff_m1.md` — this file
-- [ ] `tools/parser_target.c` — safe + vuln variants, progress instrumented
-- [ ] `tools/fuzz_runner.py` — harness with heartbeat injection, output-byte progress
-- [ ] `tools/validate_evidence.py` — all invariants above enforced
-- [ ] `tools/generate_corpus.py` — seed=3735928559 (0xDEADBEEF), deterministic
-- [ ] `Dockerfile` + `docker-compose.yml` — reproducible Ubuntu 24.04 environment (no version pinning; ARM/x86 portable)
-- [ ] `Makefile` — `make reproduce` target
-- [ ] `run_m1.sh` — called inside Docker
-- [ ] `corpus/*.bin` — 39 cases committed
-- [ ] `evidence/EP-YYYYMMDD-m1.json` — example artifact from a clean run
-- [ ] `README.md` — one-command instructions, schema description
+- [x] `docs/wedge_definition.md` — formal spec matching this document
+- [x] `docs/osff_m1.md` — this file
+- [x] `tools/parser_target.c` — safe + vuln variants, progress instrumented
+- [x] `tools/fuzz_runner.py` — harness with heartbeat injection, output-byte progress
+- [x] `tools/validate_evidence.py` — all invariants above enforced
+- [x] `tools/generate_corpus.py` — seed=3735928559 (0xDEADBEEF), deterministic
+- [x] `Dockerfile` + `docker-compose.yml` — reproducible Ubuntu 24.04 environment (no version pinning; ARM/x86 portable)
+- [x] `Makefile` — `make reproduce` target
+- [x] `run_m1.sh` — called inside Docker
+- [x] `corpus/*.bin` — 39 cases committed
+- [x] `evidence/EP-YYYYMMDD-m1.json` — example artifact from a clean run
+- [x] `README.md` — one-command instructions, schema description
 
 ---
 
