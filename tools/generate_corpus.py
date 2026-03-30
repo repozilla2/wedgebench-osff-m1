@@ -146,7 +146,7 @@ def generate_corpus(corpus_dir: Path):
     # ── Category 11: Empty input ──────────────────────────────────────────
     write_case(corpus_dir, "empty_input", b"")
 
-    # ── Category 13: Single bytes ─────────────────────────────────────────
+    # ── Category 12: Single bytes ─────────────────────────────────────────
     # Note: vuln defect demonstration does not require a synthetic trigger case.
     # The zero_length_valid_chk case (category 6) already produces observable
     # divergence: vuln accepts a zero-length frame (frames_accepted=1) that safe

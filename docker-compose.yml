@@ -4,6 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        GIT_SHA: ${GIT_SHA:-untracked}
+        GIT_SHA: osff-m1.3
     volumes:
       - ./evidence:/sentinel/evidence

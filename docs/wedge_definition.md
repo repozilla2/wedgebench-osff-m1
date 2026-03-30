@@ -46,7 +46,7 @@ The harness distinguishes and reports three wedge subtypes:
 |---|---|---|
 | Timeout | `wedge_timeout` | Wall-clock timeout exceeded, progress state unknown |
 | No-progress | `wedge_no_progress` | Progress counter stalled within timeout window |
-| Spin | `wedge_spin` | CPU utilization pegged with no output (sampled) |
+| Spin | `wedge_spin` | Reserved — not implemented in M1; always 0 |
 
 All three are summed into `wedge_count` in the evidence artifact. Category breakdown is
 recorded in `wedge_categories`.

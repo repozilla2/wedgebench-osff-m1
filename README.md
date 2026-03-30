@@ -65,12 +65,11 @@ scheduling), not device-native execution timing.
 sentinel-osff/
 ├── docs/
 │   └── wedge_definition.md     # Formal wedge spec + constants
-├── src/
-│   └── parser_target.c         # Reference parser (safe + vulnerable variants)
 ├── tools/
 │   ├── fuzz_runner.py          # Main fuzz harness
 │   ├── validate_evidence.py    # Schema + logic validator
-│   └── generate_corpus.py      # Corpus seed generator
+│   ├── generate_corpus.py      # Corpus seed generator
+│   └── parser_target.c         # Reference parser (safe + vulnerable variants)
 ├── corpus/                     # Binary fuzz seeds (generated)
 ├── evidence/                   # Output evidence JSON artifacts
 ├── build/                      # Compiled shared library (generated)
@@ -150,11 +149,7 @@ Key fields:
 
 **Note on `firmware_build_id`:** Populated from `git rev-parse HEAD` at run time. Pre-tag runs show `untracked-<timestamp>`. The submitted evidence artifact is regenerated after tagging `osff-m1.3`. The `firmware_build_id` in the committed artifact reflects the commit at build time; the final submission artifact is generated from the tagged commit so both will match.
 
-**Note on `config_hash`:** SHA-256 of the JSON-serialized locked constants `{"HARNESS_VERSION":..., "MAX_PARSE_TIME_MULT":..., "PROGRESS_POLL_INTERVAL":..., "PROGRESS_WINDOW_MS":..., "SCHEMA_VERSION":..., "WEDGE_TIMEOUT_MS":...}` with keys in sorted order. Independently reproducible from the constants listed in `docs/wedge_definition.md`. means these measurements include
-Python ctypes overhead and OS scheduling. They are **not** device execution times.
-This is intentional and honest. The scope field makes this explicit and machine-readable.
-
----
+**Note on `config_hash`:** SHA-256 of the JSON-serialized locked constants `{"HARNESS_VERSION":..., "MAX_PARSE_TIME_MULT":..., "PROGRESS_POLL_INTERVAL":..., "PROGRESS_WINDOW_MS":..., "SCHEMA_VERSION":..., "WEDGE_TIMEOUT_MS":...}` with keys in sorted order. Independently reproducible from the constants listed in `docs/wedge_definition.md`.
 
 ## Verifying an Evidence Artifact
 
