@@ -49,7 +49,7 @@ The harness distinguishes and reports four wedge subtypes:
 | No-heartbeat | `wedge_no_heartbeat` | Heartbeat frame not accepted after parser reset |
 | Spin | `wedge_spin` | Reserved — not implemented in M1; always 0 |
 
-All three are summed into `wedge_count` in the evidence artifact. Category breakdown is
+All four are summed into `wedge_count` in the evidence artifact. Category breakdown is
 recorded in `wedge_categories`.
 
 ---

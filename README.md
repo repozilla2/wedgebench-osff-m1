@@ -30,7 +30,7 @@ All three paths produce the same schema-valid artifact structure and verificatio
 
 ## Verification Notes for Reviewers
 
-**Firmware Build ID** — `firmware_build_id` is populated from `git rev-parse HEAD` (or `SENTINEL_GIT_SHA` Docker build arg). The submitted artifact is regenerated after tagging `osff-m1.3` so this field contains the exact tag name (e.g. `osff-m1.3`). Artifacts generated between tags show an intermediate commit SHA — this is expected and not an error.
+**Firmware Build ID** — `firmware_build_id` is populated from `git describe --exact-match --tags HEAD` (preferred — returns tag name e.g. `osff-m1.3`), then `git rev-parse HEAD`, then `SENTINEL_GIT_SHA` Docker build arg. The submitted artifact is regenerated after tagging `osff-m1.3` so this field contains the exact tag name (e.g. `osff-m1.3`). Artifacts generated between tags show an intermediate commit SHA — this is expected and not an error.
 
 **Why vuln divergence is measured by correctness, not wedge count** — The vuln variant
 demonstrates real semantic defects visible in `per_case_results`: `zero_length_valid_chk`
@@ -108,13 +108,13 @@ The corpus covers all required malformed traffic patterns:
 | Empty input | 1 | Zero-byte input |
 | Single bytes | 4 | SOF, null, 0xFF, 0x55 |
 
-**Total: 39 cases** — Note: `partial_frame_cut1`, `partial_frame_sof_only`, and `single_single_sof` are byte-identical (`0xAA` — SOF byte, a protocol constraint). All three are counted as distinct named cases for categorical coverage.
+**Total: 39 cases** — Note: `partial_frame_cut1`, `partial_frame_sof_only`, and `single_single_sof` are byte-identical (`0xAA` — SOF byte, a protocol constraint). Additionally, `single_single_sof`, `single_single_null`, `single_single_ff`, and `single_single_55` carry double-prefix names (a naming artifact in generate_corpus.py where `name` already contains 'single_'). All cases are counted as distinct named cases for categorical coverage.
 
 ---
 
 ## Evidence Artifact Format
 
-The harness emits a JSON evidence artifact at `evidence/EP-YYYYMMDD-m1.json`.
+The harness emits a JSON evidence artifact at `evidence/EP-20260330-m1.json`.
 
 Key fields:
 
@@ -154,7 +154,7 @@ Key fields:
 ## Verifying an Evidence Artifact
 
 ```bash
-python3 tools/validate_evidence.py evidence/EP-20260302-m1.json
+python3 tools/validate_evidence.py evidence/EP-20260330-m1.json
 ```
 
 The validator checks:

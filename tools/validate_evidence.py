@@ -11,8 +11,8 @@ Validates a fuzz run evidence JSON against the M1 schema:
   - Schema version check
 
 Usage:
-    python3 tools/validate_evidence.py evidence/EP-20260302-m1.json
-    python3 tools/validate_evidence.py evidence/EP-20260302-m1.json --strict
+    python3 tools/validate_evidence.py evidence/EP-20260330-m1.json
+    python3 tools/validate_evidence.py evidence/EP-20260330-m1.json --strict
 
 Exit codes:
     0 — PASS
@@ -85,6 +85,7 @@ LOCKED_CONSTANTS = {
     "progress_window_ms": 200,
     "latency_scope":      "harness_roundtrip",
     "latency_unit":       "us",
+    "max_parse_time_mult": 100,
 }
 
 VALID_LATENCY_UNITS  = {"us", "ms", "ns"}
