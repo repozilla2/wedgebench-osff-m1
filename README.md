@@ -35,14 +35,14 @@ The goal is bounded, reproducible evidence of observable system behavior.
 ### Recommended (Docker — fully reproducible)
 
 ```bash
-docker compose run sentinel-m1
+docker compose run wedgebench-m1
 ```
 
 If `docker compose` is unavailable:
 
 ```bash
-docker build -t sentinel-m1 .
-docker run --rm -v "$(pwd)/evidence:/sentinel/evidence" sentinel-m1
+docker build -t wedgebench-m1 .
+docker run --rm -v "$(pwd)/evidence:/wedgebench/evidence" wedgebench-m1
 ```
 
 ### Native fallback
@@ -100,7 +100,7 @@ For a concise reviewer-facing explanation of Milestone 1, see:
 
 1. `git describe --exact-match --tags HEAD`
 2. `git rev-parse HEAD`
-3. `SENTINEL_GIT_SHA`
+3. `WEDGEBENCH_GIT_SHA`
 
 The submitted artifact is regenerated from the tagged release commit.
 
@@ -158,7 +158,7 @@ They do **not** represent device-native execution timing.
 ## Repository Structure
 
 ```text
-sentinel-osff/
+wedgebench-osff-m1/
 ├── docs/
 │   ├── wedge_definition.md
 │   └── OSFF_M1_Verification_Overview.pdf
