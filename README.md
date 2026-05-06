@@ -348,7 +348,7 @@ Focus:
 
 ## OSFF
 
-Developed in connection with the Open Source Firmware Foundation (OSFF) grant program.
+Developed in connection with the [Open Source Firmware Foundation](https://opensourcefirmware.foundation/) (OSFF) grant program.
 
 ---
 
