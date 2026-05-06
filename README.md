@@ -12,8 +12,7 @@ The focus is not only on issue discovery, but on producing reproducible verifica
 
 Most firmware validation workflows focus primarily on pass/fail outcomes under controlled conditions.
 
-WedgeBench explores a complementary model:
-capturing behavior under malformed-input conditions in a deterministic, reproducible form that can be independently rerun and verified.
+WedgeBench explores a complementary model: capturing behavior under malformed-input conditions in a deterministic, reproducible form that can be independently rerun and verified.
 
 The emphasis is on:
 - deterministic execution
@@ -62,6 +61,15 @@ All execution paths produce the same schema-valid artifact structure and verific
 
 ## Verification Workflow
 
+```mermaid
+flowchart LR
+    A[Deterministic malformed-input corpus<br/>39 cases] --> B[Parser variants<br/>safe + vulnerable]
+    B --> C[Verification harness]
+    C --> D[Structured JSON evidence artifact]
+    D --> E[Validator]
+    E --> F[Machine-checkable PASS / FAIL]
+```
+
 Execution performs the following steps:
 
 1. Runs deterministic malformed-input corpus
@@ -73,6 +81,14 @@ Execution performs the following steps:
 Expected observable behavior:
 - safe parser returns to functional IDLE state
 - vulnerable parser exhibits reproducible divergence
+
+---
+
+## Milestone 1 Overview
+
+For a concise reviewer-facing explanation of Milestone 1, see:
+
+[OSFF M1 Verification Overview](docs/OSFF_M1_Verification_Overview.pdf)
 
 ---
 
@@ -130,6 +146,7 @@ They do **not** represent device-native execution timing.
 | Deliverable | Location |
 |---|---|
 | Wedge definition | `docs/wedge_definition.md` |
+| M1 overview | `docs/OSFF_M1_Verification_Overview.pdf` |
 | Verification harness | `tools/fuzz_runner.py` |
 | Schema validator | `tools/validate_evidence.py` |
 | Corpus generator | `tools/generate_corpus.py` |
@@ -143,7 +160,8 @@ They do **not** represent device-native execution timing.
 ```text
 sentinel-osff/
 ├── docs/
-│   └── wedge_definition.md
+│   ├── wedge_definition.md
+│   └── OSFF_M1_Verification_Overview.pdf
 ├── tools/
 │   ├── fuzz_runner.py
 │   ├── validate_evidence.py
@@ -167,10 +185,7 @@ A wedge is declared when either:
 2. No-progress  
    parser `bytes_consumed` counter stalls beyond `PROGRESS_WINDOW_MS`
 
-See:
-`docs/wedge_definition.md`
-
-for:
+See `docs/wedge_definition.md` for:
 - formal specification
 - constants
 - category definitions
@@ -183,7 +198,7 @@ for:
 The corpus covers the following malformed-input categories:
 
 | Category | Cases |
-|---|---|
+|---|---:|
 | Valid frames | 4 |
 | Partial frames | 7 |
 | Overlong length | 3 |
@@ -197,7 +212,7 @@ The corpus covers the following malformed-input categories:
 | Empty input | 1 |
 | Single bytes | 4 |
 
-Total: 39 deterministic cases
+Total: **39 deterministic cases**
 
 ---
 
@@ -253,7 +268,7 @@ Exit code:
 
 Milestone 1 is complete when an independent reviewer can:
 
-1. Check out tagged release
+1. Check out the tagged release
 2. Execute the workflow
 3. Produce a schema-valid evidence artifact
 4. Validate correctness successfully
@@ -288,7 +303,8 @@ The M1 corpus produces deterministic behavioral differences between the two impl
 ## Roadmap
 
 ### Milestone 1 — Deterministic Verification Harness
-Status: Complete
+
+Status: **Complete**
 
 Includes:
 - deterministic malformed-input corpus
@@ -300,7 +316,8 @@ Includes:
 ---
 
 ### Milestone 2 — Reference Firmware Integration
-Target Window: Q2 2026
+
+Target Window: **Q2 2026**
 
 Focus:
 - bounded reference integration against a real firmware-adjacent parser surface
@@ -309,7 +326,7 @@ Focus:
 - publicly reproducible execution workflow
 
 Current preferred integration target:
-- go-tcg-storage
+- `go-tcg-storage`
 
 Milestone 2 intentionally remains constrained.
 
@@ -318,7 +335,8 @@ The goal is to prove portability of the verification workflow into a real firmwa
 ---
 
 ### Milestone 3 — Verification Logging & Extended Replay
-Target Window: Q3 2026
+
+Target Window: **Q3 2026**
 
 Focus:
 - verification-oriented event logging
