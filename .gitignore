@@ -1,3 +1,10 @@
 .DS_Store
 build/
 build/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Go build artifacts
+integrations/go-tcg-storage/wb_tcg_probe
