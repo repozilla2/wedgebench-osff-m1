@@ -1,155 +1,234 @@
-# Sentinel — OSFF Firmware Slice / M1
+# wedgebench-osff-m1
 
-**Anti-wedge fuzzing + tamper-evident event logging for embedded serial parsers.**
+Deterministic verification workflows and machine-checkable artifacts for embedded firmware behavior under malformed-input conditions.
 
-This repository demonstrates a reproducible fuzz harness for detecting parser wedge conditions and validating recovery behavior after malformed input. It is the open-source deliverable for OSFF Milestone 1: Fuzzing harness with wedge detection.
+This repository contains the open-source deliverable for OSFF Milestone 1 and demonstrates a reproducible verification workflow for parser recovery behavior under malformed inputs.
+
+The focus is not only on issue discovery, but on producing reproducible verification artifacts that preserve observable behavior across deterministic execution conditions.
+
+---
+
+## Project Goal
+
+Most firmware validation workflows focus primarily on pass/fail outcomes under controlled conditions.
+
+WedgeBench explores a complementary model:
+capturing behavior under malformed-input conditions in a deterministic, reproducible form that can be independently rerun and verified.
+
+The emphasis is on:
+- deterministic execution
+- explicit failure conditions
+- machine-checkable outputs
+- validator-backed replay
+- independent rerun capability
+
+This project does **not** attempt to provide:
+- exhaustive fuzz coverage
+- certification
+- formal safety proofs
+
+The goal is bounded, reproducible evidence of observable system behavior.
 
 ---
 
 ## One-Command Run
 
-**Recommended (Docker — fully reproducible):**
+### Recommended (Docker — fully reproducible)
+
 ```bash
 docker compose run sentinel-m1
 ```
 
-If `docker compose` is not available (older Docker or Compose not installed):
+If `docker compose` is unavailable:
+
 ```bash
 docker build -t sentinel-m1 .
 docker run --rm -v "$(pwd)/evidence:/sentinel/evidence" sentinel-m1
 ```
 
-**Native fallback** (no Docker — requires Python 3.10+ and GCC):
+### Native fallback
+
+Requires:
+- Python 3.10+
+- GCC
+
 ```bash
 ./run_m1.sh
 ```
 
-All three paths produce the same schema-valid artifact structure and verification outcome.
+All execution paths produce the same schema-valid artifact structure and verification outcome.
+
+---
+
+## Verification Workflow
+
+Execution performs the following steps:
+
+1. Runs deterministic malformed-input corpus
+2. Executes parser verification harness
+3. Captures observable behavior
+4. Produces structured evidence artifact
+5. Validates artifact correctness
+
+Expected observable behavior:
+- safe parser returns to functional IDLE state
+- vulnerable parser exhibits reproducible divergence
 
 ---
 
 ## Verification Notes for Reviewers
 
-**Firmware Build ID** — `firmware_build_id` is populated from `git describe --exact-match --tags HEAD` (preferred — returns tag name e.g. `osff-m1.3`), then `git rev-parse HEAD`, then `SENTINEL_GIT_SHA` Docker build arg. The submitted artifact is regenerated after tagging `osff-m1.3` so this field contains the exact tag name (e.g. `osff-m1.3`). Artifacts generated between tags show an intermediate commit SHA — this is expected and not an error.
+### Firmware Build ID
 
-**Why vuln divergence is measured by correctness, not wedge count** — The vuln variant
-demonstrates real semantic defects visible in `per_case_results`: `zero_length_valid_chk`
-shows vuln accepting a frame safe correctly rejects (safe `frames_accepted`=0, vuln=1).
-Timing-based wedge detection of the unguarded SOF loop requires impractically large inputs;
-that is M2 scope. Behavioral divergence via frame acceptance counts is the M1 demonstration.
+`firmware_build_id` is populated from:
 
-**What wedge_count=0 proves** — A `wedge_count` of 0 means the safe parser correctly returns to a functional IDLE state after every malformed input, verified via post-reset heartbeat acceptance. It is not a trivial result: a parser with corrupted internal state after malformed input will fail the heartbeat even after reset. The harness's ability to detect incorrect behavior is demonstrated by the vuln parser's `frames_accepted=1` on `zero_length_valid_chk` — a case safe correctly rejects.
+1. `git describe --exact-match --tags HEAD`
+2. `git rev-parse HEAD`
+3. `SENTINEL_GIT_SHA`
 
-**Latency scope** — All latency values carry `latency_scope = "harness_roundtrip"` and
-`latency_unit = "us"`. These reflect host-observed harness timing (Python + ctypes + OS
-scheduling), not device-native execution timing.
+The submitted artifact is regenerated from the tagged release commit.
 
 ---
 
-## What M1 Delivers
+### Why vuln divergence is measured by correctness, not wedge count
+
+The vulnerable parser demonstrates real semantic defects visible within `per_case_results`.
+
+Example:
+- `zero_length_valid_chk`
+- safe parser rejects invalid frame
+- vulnerable parser incorrectly accepts it
+
+This produces observable behavioral divergence without synthetic injection.
+
+Timing-based wedge detection of the unguarded SOF loop requires impractically large inputs and remains future-scope work.
+
+---
+
+### What `wedge_count=0` means
+
+`wedge_count=0` means the safe parser successfully returns to a functional IDLE state after malformed input handling.
+
+This is verified using post-reset heartbeat acceptance.
+
+A parser with corrupted internal state after malformed input will fail this verification condition.
+
+---
+
+### Latency Scope
+
+All latency values represent:
+- harness-observed roundtrip timing
+- Python + ctypes + OS scheduling effects
+
+They do **not** represent device-native execution timing.
+
+---
+
+## Milestone 1 Deliverables
 
 | Deliverable | Location |
 |---|---|
-| Formal wedge definition | `docs/wedge_definition.md` |
-| Fuzz harness | `tools/fuzz_runner.py` |
+| Wedge definition | `docs/wedge_definition.md` |
+| Verification harness | `tools/fuzz_runner.py` |
 | Schema validator | `tools/validate_evidence.py` |
-| Corpus seed generator | `tools/generate_corpus.py` |
-| Reference parser (safe + vuln) | `tools/parser_target.c` |
+| Corpus generator | `tools/generate_corpus.py` |
+| Reference parser variants | `tools/parser_target.c` |
 | Example evidence artifact | `evidence/EP-*-m1.json` |
 
 ---
 
 ## Repository Structure
 
-```
+```text
 sentinel-osff/
 ├── docs/
-│   └── wedge_definition.md     # Formal wedge spec + constants
+│   └── wedge_definition.md
 ├── tools/
-│   ├── fuzz_runner.py          # Main fuzz harness
-│   ├── validate_evidence.py    # Schema + logic validator
-│   ├── generate_corpus.py      # Corpus seed generator
-│   └── parser_target.c         # Reference parser (safe + vulnerable variants)
-├── corpus/                     # Binary fuzz seeds (generated)
-├── evidence/                   # Output evidence JSON artifacts
-├── build/                      # Compiled shared library (generated)
-└── run_m1.sh                   # One-command runner
+│   ├── fuzz_runner.py
+│   ├── validate_evidence.py
+│   ├── generate_corpus.py
+│   └── parser_target.c
+├── corpus/
+├── evidence/
+├── build/
+└── run_m1.sh
 ```
 
 ---
 
 ## Wedge Definition Summary
 
-A **wedge** is declared when either:
-1. **Timeout**: parser does not complete within `WEDGE_TIMEOUT_MS` (1000ms)
-2. **No-progress**: parser's `bytes_consumed` counter stalls for `PROGRESS_WINDOW_MS` (200ms)
+A wedge is declared when either:
 
-See `docs/wedge_definition.md` for the full formal specification including constants,
-gaming resistance, and category definitions.
+1. Timeout  
+   parser does not complete within `WEDGE_TIMEOUT_MS`
+
+2. No-progress  
+   parser `bytes_consumed` counter stalls beyond `PROGRESS_WINDOW_MS`
+
+See:
+`docs/wedge_definition.md`
+
+for:
+- formal specification
+- constants
+- category definitions
+- gaming resistance assumptions
 
 ---
 
 ## Corpus Categories
 
-The corpus covers all required malformed traffic patterns:
+The corpus covers the following malformed-input categories:
 
-| Category | Cases | Description |
-|---|---|---|
-| Valid frames | 4 | Baseline — should never wedge |
-| Partial frames | 7 | Truncated at various byte offsets |
-| Overlong length | 3 | LEN field > MAX_PAYLOAD_SIZE |
-| Bad checksum | 2 | Correct structure, wrong XOR |
-| Garbage / burst noise | 6 | Random bytes, all-zeros, all-0xFF, SOF floods |
-| Zero-length payload | 2 | LEN=0 with valid/invalid checksum |
-| Valid structure, garbage payload | 1 | Passes framing, fails content |
-| SOF mid-frame | 2 | Resync stress |
-| Interlaced valid/invalid | 1 | Mixed stream |
-| Bit flips | 6 | Single-bit errors at various positions |
-| Empty input | 1 | Zero-byte input |
-| Single bytes | 4 | SOF, null, 0xFF, 0x55 |
+| Category | Cases |
+|---|---|
+| Valid frames | 4 |
+| Partial frames | 7 |
+| Overlong length | 3 |
+| Bad checksum | 2 |
+| Garbage / burst noise | 6 |
+| Zero-length payload | 2 |
+| Valid structure / garbage payload | 1 |
+| SOF mid-frame | 2 |
+| Interlaced valid/invalid | 1 |
+| Bit flips | 6 |
+| Empty input | 1 |
+| Single bytes | 4 |
 
-**Total: 39 cases** — Note: `partial_frame_cut1`, `partial_frame_sof_only`, and `single_single_sof` are byte-identical (`0xAA` — SOF byte, a protocol constraint). Additionally, `single_single_sof`, `single_single_null`, `single_single_ff`, and `single_single_55` carry double-prefix names (a naming artifact in generate_corpus.py where `name` already contains 'single_'). All cases are counted as distinct named cases for categorical coverage.
+Total: 39 deterministic cases
 
 ---
 
 ## Evidence Artifact Format
 
-The harness emits a JSON evidence artifact at `evidence/EP-20260330-m1.json`.
+The harness emits a structured JSON verification artifact.
 
-Key fields:
+Example fields:
 
 ```json
 {
   "schema_version": "1.0.0",
   "firmware_build_id": "<git-sha>",
-  "config_hash": "<sha256-of-constants>",
-  "input_corpus_hash": "<sha256-of-corpus>",
+  "input_corpus_hash": "<sha256>",
   "trial_count": 39,
   "wedge_count": 0,
   "crash_count": 0,
-  "enforcement_count": 0,
-  "wedge_categories": {
-    "wedge_timeout": 0,
-    "wedge_no_progress": 0,
-    "wedge_no_heartbeat": 0,
-    "wedge_spin": 0
-  },
-  "latency_scope": "harness_roundtrip",
-  "latency_unit": "us",
   "latency_distribution": {
     "p50": 6.51,
     "p95": 12.96,
-    "p99": 13.65,
-    "min": 0.22,
-    "max": 13.65,
-    "n": 39
+    "p99": 13.65
   }
 }
 ```
 
-**Note on `firmware_build_id`:** Populated from `git rev-parse HEAD` at run time. Pre-tag runs show `untracked-<timestamp>`. The submitted evidence artifact is regenerated after tagging `osff-m1.3`. The `firmware_build_id` in the committed artifact reflects the commit at build time; the final submission artifact is generated from the tagged commit so both will match.
+Artifacts are:
+- deterministic
+- machine-checkable
+- independently reproducible
 
-**Note on `config_hash`:** SHA-256 of the JSON-serialized locked constants `{"HARNESS_VERSION":..., "MAX_PARSE_TIME_MULT":..., "PROGRESS_POLL_INTERVAL":..., "PROGRESS_WINDOW_MS":..., "SCHEMA_VERSION":..., "WEDGE_TIMEOUT_MS":...}` with keys in sorted order. Independently reproducible from the constants listed in `docs/wedge_definition.md`.
+---
 
 ## Verifying an Evidence Artifact
 
@@ -157,16 +236,16 @@ Key fields:
 python3 tools/validate_evidence.py evidence/EP-20260330-m1.json
 ```
 
-The validator checks:
-- All required fields present with correct types
-- Non-negative integer constraints
-- Percentile ordering: p50 ≤ p95 ≤ p99
-- Latency `n` ≤ `trial_count`
-- `enforcement_count` == `wedge_count` + `crash_count`
-- `wedge_categories` sum == `wedge_count`
-- Per-case result counts match top-level counters
+Validator checks include:
+- required schema fields
+- type correctness
+- percentile ordering
+- counter consistency
+- per-case aggregation correctness
 
-Exit code `0` = PASS, `1` = FAIL.
+Exit code:
+- `0` = PASS
+- `1` = FAIL
 
 ---
 
@@ -174,38 +253,97 @@ Exit code `0` = PASS, `1` = FAIL.
 
 Milestone 1 is complete when an independent reviewer can:
 
-1. Check out the tagged release `osff-m1.3`
-2. Run `docker compose run sentinel-m1`
-3. Receive a schema-valid evidence JSON including `wedge_count`, `latency_distribution`,
-   and `latency_unit`
+1. Check out tagged release
+2. Execute the workflow
+3. Produce a schema-valid evidence artifact
+4. Validate correctness successfully
 
-The validator script (`validate_evidence.py`) is the machine-readable acceptance check.
+The validator script is the machine-readable acceptance check.
 
 ---
 
 ## Parser Variants
 
-`tools/parser_target.c` contains two parser implementations:
+`tools/parser_target.c` contains two parser implementations.
 
-**`parser_safe_*`** — Hardened reference implementation:
-- Bounded loops with `PARSER_MAX_ITERS = 512` guard
-- Enforces `MAX_PAYLOAD_SIZE = 253` on LEN field
-- Clean rejection + IDLE reset on all malformed inputs
-- Progress counter incremented on every byte
+### `parser_safe_*`
 
-**`parser_vuln_*`** — Intentionally defective implementation:
-- SOF search loop without an iteration guard (degraded behavior risk on large non-SOF bursts)
-- No LEN upper-bound check (out-of-bounds write on LEN=255)
-- Demonstrates the failure modes the safe parser prevents
+Hardened reference implementation:
+- bounded loops
+- LEN validation
+- clean malformed-input rejection
+- deterministic reset behavior
 
-The M1 corpus produces observable behavioral divergence between safe and vuln. The clearest case: `zero_length_valid_chk` — vuln accepts a zero-length frame (`frames_accepted=1`) that safe correctly rejects (`frames_accepted=0`). This is a real semantic defect visible in the evidence artifact without any synthetic injection. Timing-based wedge detection of the unguarded SOF loop requires input sizes impractical for a serial parser corpus; exhaustive vuln stress testing is M2 scope. The safe parser reports `wedge_count: 0` across all cases; this is the primary M1 claim.
+### `parser_vuln_*`
+
+Intentionally defective implementation:
+- missing iteration guard
+- missing LEN upper-bound enforcement
+- demonstrates observable divergence behavior
+
+The M1 corpus produces deterministic behavioral differences between the two implementations.
 
 ---
 
-## Milestone Roadmap
+## Roadmap
 
-| Milestone | Due | Description |
-|---|---|---|
-| **M1** (this) | Mar 23, 2026 | Fuzz harness + wedge detection + evidence schema |
-| M2 | Apr 13, 2026 | Hardened parser module + test suite + CI runner |
-| M3 | Apr 27, 2026 | Hash-chained event log + verifier tooling |
+### Milestone 1 — Deterministic Verification Harness
+Status: Complete
+
+Includes:
+- deterministic malformed-input corpus
+- parser verification harness
+- structured evidence artifacts
+- validator-backed replay
+- one-command reproducibility
+
+---
+
+### Milestone 2 — Reference Firmware Integration
+Target Window: Q2 2026
+
+Focus:
+- bounded reference integration against a real firmware-adjacent parser surface
+- preservation of deterministic reproducibility
+- machine-checkable artifact generation
+- publicly reproducible execution workflow
+
+Current preferred integration target:
+- go-tcg-storage
+
+Milestone 2 intentionally remains constrained.
+
+The goal is to prove portability of the verification workflow into a real firmware-adjacent environment before expanding scope.
+
+---
+
+### Milestone 3 — Verification Logging & Extended Replay
+Target Window: Q3 2026
+
+Focus:
+- verification-oriented event logging
+- replay integrity tooling
+- extended reproducibility workflows
+- final documentation and public release
+
+---
+
+## OSFF
+
+Developed in connection with the Open Source Firmware Foundation (OSFF) grant program.
+
+---
+
+## Organization
+
+This work is part of Kaimera Group’s research into reproducible verification workflows and externally verifiable system behavior.
+
+https://kaimeragroup.com
+
+---
+
+## Contact
+
+For collaboration, verification research, or integration discussions:
+
+keith@kaimeragroup.com
