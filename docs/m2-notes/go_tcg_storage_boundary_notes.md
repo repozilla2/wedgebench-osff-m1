@@ -10,7 +10,7 @@ Document the parser boundary selected for the M2 reference integration.
 
 ## Candidate Boundary
 
-`plainCom.Receive(...)`
+`plainCom.Receive(ses *Session)`
 
 ## Selection Rationale
 
@@ -48,7 +48,7 @@ The M2 integration should prove that WedgeBench can connect to a real firmware-a
 
 ## Open Questions
 
-- Confirm exact package import path for `plainCom.Receive(...)`
+- Confirm exact package import path for `plainCom.Receive(ses *Session)`
 - Confirm minimal fake `DriveIntf` implementation
 - Confirm Go version required for reproducible Docker build
 - Confirm whether the first probe should use `go run` or compiled binary
