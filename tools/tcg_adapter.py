@@ -20,8 +20,9 @@ class AdapterResult:
 class TCGAdapter:
     def __init__(self, probe_path: str | None = None) -> None:
         repo_root = Path(__file__).resolve().parents[1]
+        self.probe_module_dir = repo_root / "integrations/go-tcg-storage"
         self.probe_path = Path(probe_path) if probe_path else (
-            repo_root / "integrations/go-tcg-storage/cmd/wb_tcg_probe/main.go"
+            self.probe_module_dir / "cmd/wb_tcg_probe"
         )
 
     def reset(self) -> None:
@@ -36,11 +37,12 @@ class TCGAdapter:
         }
 
         proc = subprocess.run(
-            ["go", "run", str(self.probe_path)],
+            ["go", "run", "./cmd/wb_tcg_probe"],
             input=json.dumps(payload).encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            cwd=self.probe_module_dir,
         )
 
         if not proc.stdout:
