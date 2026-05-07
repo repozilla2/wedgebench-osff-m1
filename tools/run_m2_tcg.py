@@ -31,6 +31,7 @@ def main() -> int:
             "output_bytes": result.output_bytes,
             "progress": result.progress,
             "latency_us": result.latency_us,
+            "parser_outcome": result.parser_outcome,
             "heartbeat_ok": heartbeat_ok,
         })
 
