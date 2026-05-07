@@ -12,6 +12,8 @@ def test_tcg_adapter_returns_adapter_result():
     assert isinstance(result.output_bytes, int)
     assert isinstance(result.progress, int)
     assert isinstance(result.latency_us, float)
+    assert isinstance(result.parser_outcome, str)
+    assert result.parser_outcome in {"accepted", "empty_parse", "rejected", "probe_error"}
 
 
 def test_tcg_adapter_handles_empty_input():
