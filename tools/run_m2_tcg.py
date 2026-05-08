@@ -22,6 +22,10 @@ def main() -> int:
         result = adapter.feed(data)
         heartbeat_ok = adapter.inject_heartbeat()
 
+        wedge_type = None
+        if not heartbeat_ok:
+            wedge_type = "wedge_no_heartbeat"
+
         results.append({
             "case": case_path.stem,
             "ok": result.ok,
@@ -33,6 +37,8 @@ def main() -> int:
             "latency_us": result.latency_us,
             "parser_outcome": result.parser_outcome,
             "heartbeat_ok": heartbeat_ok,
+            "wedge": wedge_type is not None,
+            "wedge_type": wedge_type,
         })
 
     artifact = {
