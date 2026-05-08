@@ -29,3 +29,22 @@ def test_tcg_adapter_heartbeat_returns_bool():
     adapter = TCGAdapter()
 
     assert isinstance(adapter.inject_heartbeat(), bool)
+
+def test_tcg_adapter_classifies_short_input_as_empty_parse():
+    adapter = TCGAdapter()
+    result = adapter.feed(bytes.fromhex("deadbeef"))
+
+    assert isinstance(result, AdapterResult)
+    assert result.parser_outcome == "empty_parse"
+    assert result.frames_accepted == 0
+    assert result.output_bytes == 0
+
+
+def test_tcg_adapter_rejects_invalid_hex_probe_input():
+    adapter = TCGAdapter()
+    result = adapter.feed(b"not-hex-at-probe-level")
+
+    assert isinstance(result, AdapterResult)
+    assert result.parser_outcome in {"empty_parse", "rejected"}
+    assert result.frames_accepted == 0
+
