@@ -15,13 +15,15 @@ class AdapterResult:
     output_bytes: int
     progress: int
     latency_us: float
+    parser_outcome: str
 
 
 class TCGAdapter:
     def __init__(self, probe_path: str | None = None) -> None:
         repo_root = Path(__file__).resolve().parents[1]
+        self.probe_module_dir = repo_root / "integrations/go-tcg-storage"
         self.probe_path = Path(probe_path) if probe_path else (
-            repo_root / "integrations/go-tcg-storage/cmd/wb_tcg_probe/main.go"
+            self.probe_module_dir / "cmd/wb_tcg_probe"
         )
 
     def reset(self) -> None:
@@ -36,11 +38,12 @@ class TCGAdapter:
         }
 
         proc = subprocess.run(
-            ["go", "run", str(self.probe_path)],
+            ["go", "run", "./cmd/wb_tcg_probe"],
             input=json.dumps(payload).encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            cwd=self.probe_module_dir,
         )
 
         if not proc.stdout:
@@ -52,6 +55,7 @@ class TCGAdapter:
                 output_bytes=0,
                 progress=0,
                 latency_us=0.0,
+                parser_outcome="probe_error",
             )
 
         raw = json.loads(proc.stdout.decode("utf-8"))
@@ -60,14 +64,25 @@ class TCGAdapter:
         parsed_hex = raw.get("parsed_hex") or ""
         output_bytes = len(parsed_hex) // 2
 
+        if ok and output_bytes > 0:
+            parser_outcome = "accepted"
+            frames_accepted = 1
+        elif ok and output_bytes == 0:
+            parser_outcome = "empty_parse"
+            frames_accepted = 0
+        else:
+            parser_outcome = "rejected"
+            frames_accepted = 0
+
         return AdapterResult(
             ok=ok,
             error=raw.get("error"),
             response_len=int(raw.get("response_len", 0)),
-            frames_accepted=1 if ok and output_bytes > 0 else 0,
+            frames_accepted=frames_accepted,
             output_bytes=output_bytes,
             progress=int(raw.get("if_recv_calls", 0)),
             latency_us=float(raw.get("latency_us", 0.0)),
+            parser_outcome=parser_outcome,
         )
 
     def inject_heartbeat(self) -> bool:

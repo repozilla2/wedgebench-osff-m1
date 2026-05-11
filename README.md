@@ -32,17 +32,25 @@ The goal is bounded, reproducible evidence of observable system behavior.
 
 ## One-Command Run
 
+For the reviewer-facing full verification path across M1, M2, and tests, see:
+
+[OSFF M3 Reviewer Reproducibility Checklist](docs/M3_Reviewer_Reproducibility_Checklist.md)
+
+```bash
+make osff-verify
+```
+
 ### Recommended (Docker — fully reproducible)
 
 ```bash
-docker compose run wedgebench-m1
+docker compose run --rm sentinel-m1
 ```
 
 If `docker compose` is unavailable:
 
 ```bash
-docker build -t wedgebench-m1 .
-docker run --rm -v "$(pwd)/evidence:/wedgebench/evidence" wedgebench-m1
+docker build -t wedgebench-osff-m1 .
+docker run --rm -v "$(pwd)/evidence:/sentinel/evidence" wedgebench-osff-m1
 ```
 
 ### Native fallback
@@ -79,8 +87,9 @@ Execution performs the following steps:
 5. Validates artifact correctness
 
 Expected observable behavior:
-- safe parser returns to functional IDLE state
-- vulnerable parser exhibits reproducible divergence
+- safe parser returns to a functional IDLE state after malformed input handling
+- vulnerable parser exhibits reproducible semantic divergence in per-case results
+- wedge/crash detection remains separate from semantic correctness checks
 
 ---
 
@@ -123,7 +132,7 @@ Timing-based wedge detection of the unguarded SOF loop requires impractically la
 
 ### What `wedge_count=0` means
 
-`wedge_count=0` means the safe parser successfully returns to a functional IDLE state after malformed input handling.
+`wedge_count=0` means the harness did not detect timeout, no-progress, no-heartbeat, or spin behavior for the parser under test. It does not mean the vulnerable parser is semantically correct; semantic defects are measured separately in `per_case_results`.
 
 This is verified using post-reset heartbeat acceptance.
 

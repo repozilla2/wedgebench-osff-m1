@@ -22,6 +22,10 @@ def main() -> int:
         result = adapter.feed(data)
         heartbeat_ok = adapter.inject_heartbeat()
 
+        wedge_type = None
+        if not heartbeat_ok:
+            wedge_type = "wedge_no_heartbeat"
+
         results.append({
             "case": case_path.stem,
             "ok": result.ok,
@@ -31,14 +35,30 @@ def main() -> int:
             "output_bytes": result.output_bytes,
             "progress": result.progress,
             "latency_us": result.latency_us,
+            "parser_outcome": result.parser_outcome,
             "heartbeat_ok": heartbeat_ok,
+            "wedge": wedge_type is not None,
+            "wedge_type": wedge_type,
         })
 
     artifact = {
         "schema_version": "m2-draft",
+        "milestone": "M2",
+        "artifact_type": "tcg_storage_adapter_draft",
         "target": "go-tcg-storage",
         "adapter": "tcg_adapter",
+        "parser_under_test": "semantic_adapter",
         "trial_count": len(results),
+        "source_evidence": "evidence/EP-20260511-m1-docker-local.json",
+        "claim_scope": (
+            "Semantic outcome taxonomy and draft TCG adapter mapping only; "
+            "not physical-device timing, exploit discovery, formal safety proof, "
+            "or production firmware validation."
+        ),
+        "latency_note": (
+            "Per-case latency_us is host adapter runtime and may vary between runs; "
+            "it is not used as a deterministic M2 evidence claim."
+        ),
         "results": results,
     }
 
