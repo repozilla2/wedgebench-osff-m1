@@ -1,4 +1,4 @@
-.PHONY: reproduce osff-verify m2-tcg test validate clean corpus local clean-all
+.PHONY: reproduce osff-verify m2-tcg test validate clean corpus local clean-all m2-verify
 
 # One-command Docker reproduce for M1.
 reproduce:
@@ -49,3 +49,20 @@ clean:
 # Full clean including corpus.
 clean-all: clean
 	rm -rf corpus/
+
+# Reviewer-facing M2 reference integration verification.
+m2-verify:
+	@echo "== M2 go-tcg-storage reference integration =="
+	cd integrations/go-tcg-storage && go build ./cmd/wb_tcg_probe/
+	@echo ""
+	@echo "== M2 draft evidence generation =="
+	python3 tools/run_m2_tcg.py
+	@echo ""
+	@echo "== M2 artifact sanity check =="
+	python3 -c "import json; d=json.load(open('evidence/m2/EP-M2-go-tcg-storage-draft.json')); assert d['schema_version']=='m2-draft'; assert d['trial_count']==39; print('artifact ok, trial_count =', d['trial_count'])"
+	@echo ""
+	@echo "== Python contract tests =="
+	pytest -q
+	@echo ""
+	@echo "== M2 verification complete =="
+

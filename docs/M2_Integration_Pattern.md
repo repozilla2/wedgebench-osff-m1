@@ -50,7 +50,7 @@ The correct boundary is the **lowest-level receive/decode function** that:
 ### go-tcg-storage boundary
 
 ```
-core.NewPlainCommunication(fakeDevice, hostProps, tperProps).Receive(proto, ses)
+core.NewPlainCommunication(fakeDevice, hostProps, tperProps).Receive(ses)
 ```
 
 **Why this boundary and not higher-level helpers:**
@@ -176,7 +176,7 @@ but produced no observable progress signals.
 
 ### Boundary
 
-`pkg/core/communication.go` → `plainCom.Receive(proto, ses)`  
+`pkg/core/communication.go` → `plainCom.Receive(ses)`  
 Called via `core.NewPlainCommunication(fakeDevice, hostProps, tperProps)`
 
 ### Fake device
