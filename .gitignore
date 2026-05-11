@@ -8,3 +8,6 @@ __pycache__/
 
 # Go build artifacts
 integrations/go-tcg-storage/wb_tcg_probe
+
+# Generated M2 draft adapter artifact; produced by tools/run_m2_tcg.py
+evidence/m2/EP-M2-go-tcg-storage-draft.json
