@@ -32,6 +32,14 @@ The goal is bounded, reproducible evidence of observable system behavior.
 
 ## One-Command Run
 
+For the reviewer-facing full verification path across M1, M2, and tests, see:
+
+[OSFF M3 Reviewer Reproducibility Checklist](docs/M3_Reviewer_Reproducibility_Checklist.md)
+
+```bash
+make osff-verify
+```
+
 ### Recommended (Docker — fully reproducible)
 
 ```bash
