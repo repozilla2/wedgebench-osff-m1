@@ -48,3 +48,32 @@ def test_tcg_adapter_rejects_invalid_hex_probe_input():
     assert result.parser_outcome in {"empty_parse", "rejected"}
     assert result.frames_accepted == 0
 
+
+
+def test_m2_tcg_generated_artifact_has_reviewer_metadata(tmp_path):
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[1]
+
+    subprocess.run(
+        [sys.executable, "tools/run_m2_tcg.py"],
+        cwd=repo_root,
+        check=True,
+    )
+
+    path = repo_root / "evidence" / "m2" / "EP-M2-go-tcg-storage-draft.json"
+    data = json.loads(path.read_text())
+
+    assert data["schema_version"] == "m2-draft"
+    assert data["milestone"] == "M2"
+    assert data["artifact_type"] == "tcg_storage_adapter_draft"
+    assert data["target"] == "go-tcg-storage"
+    assert data["adapter"] == "tcg_adapter"
+    assert data["parser_under_test"] == "semantic_adapter"
+    assert data["trial_count"] == 39
+    assert data["source_evidence"] == "evidence/EP-20260511-m1-docker-local.json"
+    assert "Semantic outcome taxonomy" in data["claim_scope"]
+    assert "latency_us" in data["latency_note"]
