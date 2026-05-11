@@ -58,8 +58,8 @@ m2-verify:
 	@echo "== M2 draft evidence generation =="
 	python3 tools/run_m2_tcg.py
 	@echo ""
-	@echo "== M2 artifact sanity check =="
-	python3 -c "import json; d=json.load(open('evidence/m2/EP-M2-go-tcg-storage-draft.json')); assert d['schema_version']=='m2-draft'; assert d['trial_count']==39; print('artifact ok, trial_count =', d['trial_count'])"
+	@echo "== M2 artifact validation =="
+	python3 tools/validate_m2_evidence.py evidence/m2/EP-M2-go-tcg-storage-draft.json
 	@echo ""
 	@echo "== Python contract tests =="
 	pytest -q
