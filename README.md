@@ -2,7 +2,7 @@
 
 Deterministic verification workflows and machine-checkable artifacts for embedded firmware behavior under malformed-input conditions.
 
-This repository contains the open-source deliverable for OSFF Milestone 1 and demonstrates a reproducible verification workflow for parser recovery behavior under malformed inputs.
+This repository contains open-source deliverables for the Open Source Firmware Foundation (OSFF) WedgeBench work and demonstrates reproducible verification workflows for parser recovery behavior under malformed inputs.
 
 The focus is not only on issue discovery, but on producing reproducible verification artifacts that preserve observable behavior across deterministic execution conditions.
 
@@ -32,12 +32,18 @@ The goal is bounded, reproducible evidence of observable system behavior.
 
 ## One-Command Run
 
-For the reviewer-facing full verification path across M1, M2, and tests, see:
+For the reviewer-facing verification path across M1, M2, and tests, see:
 
-[OSFF M3 Reviewer Reproducibility Checklist](docs/M3_Reviewer_Reproducibility_Checklist.md)
+[M1/M2 Reviewer Reproducibility Checklist](docs/M1_M2_Reviewer_Reproducibility_Checklist.md)
 
 ```bash
 make osff-verify
+```
+
+For the M2-specific validator-backed reference integration path:
+
+```bash
+make m2-verify
 ```
 
 ### Recommended (Docker — fully reproducible)
@@ -326,26 +332,25 @@ Includes:
 
 ### Milestone 2 — Reference Firmware Integration
 
-Target Window: **Q2 2026**
+Status: **Complete**
 
-Focus:
+Current reference integration target:
+- `go-tcg-storage`
+
+Includes:
 - bounded reference integration against a real firmware-adjacent parser surface
 - preservation of deterministic reproducibility
 - machine-checkable artifact generation
+- validator-backed M2 evidence checks
 - publicly reproducible execution workflow
 
-Current preferred integration target:
-- `go-tcg-storage`
-
-Milestone 2 intentionally remains constrained.
-
-The goal is to prove portability of the verification workflow into a real firmware-adjacent environment before expanding scope.
+M2 intentionally remains constrained. The goal is to prove portability of the verification workflow into a real firmware-adjacent environment before expanding scope.
 
 ---
 
 ### Milestone 3 — Verification Logging & Extended Replay
 
-Target Window: **Q3 2026**
+Status: **Future scope / not publicly released**
 
 Focus:
 - verification-oriented event logging
