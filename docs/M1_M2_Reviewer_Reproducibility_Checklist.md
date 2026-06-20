@@ -20,7 +20,28 @@ This checklist does not represent OSFF Milestone 3. M3 verification logging rema
 - Docker Desktop or Docker Engine
 - Docker Compose
 - Python 3.10+
+- GCC or Clang
+- Go
 - pytest
+
+The M2 Go module uses a local replace directive. Place the upstream checkout as a
+sibling of this WedgeBench repository:
+
+    <parent>/
+      wedgebench-osff-m1/
+      go-tcg-storage/
+
+The sibling `go-tcg-storage` checkout must be a Git repository at:
+
+    f99905c99780c82856226b20b59fb4863d83ae0d
+
+It must be clean: no staged changes, unstaged changes, or untracked files. The
+preflight reports dirty status paths but does not modify or clean the upstream
+checkout.
+
+The upstream repository for that checkout is:
+
+    https://github.com/open-source-firmware/go-tcg-storage
 
 ## One-command reviewer verification
 
@@ -47,13 +68,14 @@ M1 should show:
 
 M2 should show:
 
+    M2 environment preflight: PASS
     Wrote .../evidence/m2/EP-M2-go-tcg-storage-draft.json
     M2 evidence: PASS
     trial_count=39
 
 Tests should show:
 
-    45 passed
+    at least 45 passed
 
 ## Generated artifacts
 
@@ -63,6 +85,14 @@ Reviewer runs may generate local evidence files:
     evidence/m2/EP-M2-go-tcg-storage-draft.json
 
 These are local reproducibility outputs and are intentionally ignored unless promoted deliberately as canonical evidence.
+
+Newly generated M2 draft artifacts include the recovered upstream provenance:
+
+    "upstream_repository": "https://github.com/open-source-firmware/go-tcg-storage"
+    "upstream_commit": "f99905c99780c82856226b20b59fb4863d83ae0d"
+
+Already submitted canonical evidence artifacts are not rewritten by this reviewer
+path.
 
 ## Claim boundaries
 
@@ -96,5 +126,12 @@ If Docker cannot connect to the Docker API, start Docker Desktop and retry:
 If tests fail with import errors, run tests from the repository root:
 
     pytest -q
+
+If `make m2-verify` reports a missing, mismatched, or dirty sibling checkout,
+verify the layout above and run:
+
+    cd ../go-tcg-storage
+    git rev-parse HEAD
+    git status --short --untracked-files=all
 
 A clean reviewer run should not require committing generated files.
