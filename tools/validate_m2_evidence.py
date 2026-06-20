@@ -26,6 +26,11 @@ import json
 import sys
 from pathlib import Path
 
+try:
+    from .check_m2_environment import UPSTREAM_COMMIT, UPSTREAM_REPOSITORY
+except ImportError:
+    from check_m2_environment import UPSTREAM_COMMIT, UPSTREAM_REPOSITORY
+
 # ── Schema constants ──────────────────────────────────────────────────────────
 
 SUPPORTED_SCHEMA_VERSIONS = {"m2-draft"}
@@ -35,6 +40,8 @@ REQUIRED_TOP_LEVEL: dict[str, type | tuple] = {
     "milestone":        str,
     "artifact_type":    str,
     "target":           str,
+    "upstream_repository": str,
+    "upstream_commit":  str,
     "adapter":          str,
     "parser_under_test": str,
     "trial_count":      int,
@@ -49,6 +56,8 @@ ALLOWED_LITERALS: dict[str, set] = {
     "milestone":      {"M2"},
     "artifact_type":  {"tcg_storage_adapter_draft"},
     "target":         {"go-tcg-storage"},
+    "upstream_repository": {UPSTREAM_REPOSITORY},
+    "upstream_commit": {UPSTREAM_COMMIT},
     "adapter":        {"tcg_adapter"},
 }
 
@@ -94,6 +103,10 @@ class _Result:
 def _check_type(r: _Result, label: str, val: object, expected: type | tuple) -> bool:
     """Return True if val matches expected type(s), else record error and return False."""
     types = expected if isinstance(expected, tuple) else (expected,)
+    if int in types and isinstance(val, bool):
+        type_names = " | ".join(t.__name__ for t in types)
+        r.error(f"{label}: expected {type_names}, got bool ({val!r})")
+        return False
     if not isinstance(val, types):
         type_names = " | ".join(t.__name__ for t in types)
         r.error(f"{label}: expected {type_names}, got {type(val).__name__} ({val!r})")
@@ -157,7 +170,12 @@ def validate(data: object) -> _Result:
 
         # Non-negative counters
         for field in NONNEG_CASE_INT_FIELDS:
-            if field in case and isinstance(case[field], int) and case[field] < 0:
+            if (
+                field in case
+                and isinstance(case[field], int)
+                and not isinstance(case[field], bool)
+                and case[field] < 0
+            ):
                 r.error(f"{label_prefix} '{field}' must be >= 0, got {case[field]}")
 
         # latency_us >= 0

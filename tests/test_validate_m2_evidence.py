@@ -1,7 +1,6 @@
 """
 Tests for tools/validate_m2_evidence.py
 """
-import copy
 import json
 import subprocess
 import sys
@@ -9,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from tools.check_m2_environment import UPSTREAM_COMMIT, UPSTREAM_REPOSITORY
 from tools.validate_m2_evidence import validate, ALLOWED_PARSER_OUTCOMES
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -41,6 +41,8 @@ def _make_artifact(n: int = 1, **top_overrides) -> dict:
         "milestone": "M2",
         "artifact_type": "tcg_storage_adapter_draft",
         "target": "go-tcg-storage",
+        "upstream_repository": UPSTREAM_REPOSITORY,
+        "upstream_commit": UPSTREAM_COMMIT,
         "adapter": "tcg_adapter",
         "parser_under_test": "semantic_adapter",
         "trial_count": n,
@@ -62,8 +64,8 @@ def test_valid_artifact_passes():
 def test_missing_required_field_fails():
     for field in [
         "schema_version", "milestone", "artifact_type", "target",
-        "adapter", "parser_under_test", "trial_count", "source_evidence",
-        "claim_scope", "latency_note", "results",
+        "upstream_repository", "upstream_commit", "adapter", "parser_under_test",
+        "trial_count", "source_evidence", "claim_scope", "latency_note", "results",
     ]:
         d = _make_artifact()
         del d[field]
@@ -81,6 +83,12 @@ def test_wrong_type_on_top_level_string_field_fails():
 def test_wrong_type_trial_count_fails():
     r = validate(_make_artifact(trial_count="39"))
     assert not r.passed
+
+
+def test_bool_trial_count_fails():
+    r = validate(_make_artifact(n=1, trial_count=True))
+    assert not r.passed
+    assert any("'trial_count'" in e and "expected int, got bool" in e for e in r.errors)
 
 
 def test_bad_schema_version_fails():
@@ -102,6 +110,34 @@ def test_bad_artifact_type_fails():
 def test_bad_target_fails():
     r = validate(_make_artifact(target="not-a-target"))
     assert not r.passed
+
+
+def test_missing_upstream_repository_fails():
+    d = _make_artifact()
+    del d["upstream_repository"]
+    r = validate(d)
+    assert not r.passed
+    assert any("upstream_repository" in e for e in r.errors)
+
+
+def test_wrong_upstream_repository_fails():
+    r = validate(_make_artifact(upstream_repository="https://example.invalid/repo"))
+    assert not r.passed
+    assert any("upstream_repository" in e for e in r.errors)
+
+
+def test_missing_upstream_commit_fails():
+    d = _make_artifact()
+    del d["upstream_commit"]
+    r = validate(d)
+    assert not r.passed
+    assert any("upstream_commit" in e for e in r.errors)
+
+
+def test_wrong_upstream_commit_fails():
+    r = validate(_make_artifact(upstream_commit="0" * 40))
+    assert not r.passed
+    assert any("upstream_commit" in e for e in r.errors)
 
 
 def test_bad_adapter_fails():
@@ -210,6 +246,15 @@ def test_negative_case_counter_fails(field):
     assert not validate(d).passed
 
 
+@pytest.mark.parametrize("field", ["response_len", "frames_accepted", "output_bytes", "progress"])
+def test_bool_case_counter_fails(field):
+    d = _make_artifact(n=1)
+    d["results"][0][field] = True
+    r = validate(d)
+    assert not r.passed
+    assert any(field in e and "expected int, got bool" in e for e in r.errors)
+
+
 def test_negative_latency_fails():
     d = _make_artifact(n=1)
     d["results"][0]["latency_us"] = -5.0
@@ -283,6 +328,9 @@ def test_cli_passes_on_generated_artifact():
     assert result.returncode == 0, f"CLI failed:\n{result.stdout}\n{result.stderr}"
     assert "M2 evidence: PASS" in result.stdout
     assert "trial_count=39" in result.stdout
+    artifact = json.loads((REPO_ROOT / "evidence/m2/EP-M2-go-tcg-storage-draft.json").read_text())
+    assert artifact["upstream_repository"] == UPSTREAM_REPOSITORY
+    assert artifact["upstream_commit"] == UPSTREAM_COMMIT
 
 
 def test_cli_fails_on_bad_artifact(tmp_path):

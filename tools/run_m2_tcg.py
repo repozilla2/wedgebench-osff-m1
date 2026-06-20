@@ -3,16 +3,34 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tcg_adapter import TCGAdapter
+try:
+    from .check_m2_environment import inspect_environment, print_errors
+    from .tcg_adapter import TCGAdapter
+except ImportError:
+    from check_m2_environment import inspect_environment, print_errors
+    from tcg_adapter import TCGAdapter
 
 
-def main() -> int:
-    repo_root = Path(__file__).resolve().parents[1]
+def main(
+    *,
+    repo_root: Path | None = None,
+    adapter_factory=TCGAdapter,
+    environment_inspector=inspect_environment,
+) -> int:
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parents[1]
+
+    inspection = environment_inspector(repo_root)
+    if inspection.errors:
+        print_errors(inspection.errors)
+        return 1
+    assert inspection.provenance is not None
+
     corpus_dir = repo_root / "corpus"
     evidence_dir = repo_root / "evidence" / "m2"
     evidence_dir.mkdir(parents=True, exist_ok=True)
 
-    adapter = TCGAdapter()
+    adapter = adapter_factory()
     cases = sorted(corpus_dir.glob("*.bin"))
 
     results = []
@@ -46,6 +64,8 @@ def main() -> int:
         "milestone": "M2",
         "artifact_type": "tcg_storage_adapter_draft",
         "target": "go-tcg-storage",
+        "upstream_repository": inspection.provenance.upstream_repository,
+        "upstream_commit": inspection.provenance.upstream_commit,
         "adapter": "tcg_adapter",
         "parser_under_test": "semantic_adapter",
         "trial_count": len(results),

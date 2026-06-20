@@ -9,13 +9,18 @@
 
 | Field | Value |
 |---|---|
-| Upstream repo | `github.com/open-source-firmware/go-tcg-storage` |
-| Local path | `~/projects/go-tcg-storage` (read-only; do not modify) |
+| Upstream repo | `https://github.com/open-source-firmware/go-tcg-storage` |
+| Upstream commit | `f99905c99780c82856226b20b59fb4863d83ae0d` |
+| Local path | `../go-tcg-storage` relative to the WedgeBench repository root (read-only; do not modify) |
 | Go module name | `github.com/open-source-firmware/go-tcg-storage` |
 | Integration module | `wedgebench.local/integrations/go-tcg-storage` |
 | Replace directive | `replace github.com/open-source-firmware/go-tcg-storage => ../../../go-tcg-storage` |
 
 The integration module lives at `integrations/go-tcg-storage/go.mod` and uses a local `replace` directive. No upstream fork or network dependency is required to build.
+The reviewer preflight requires Go on `PATH`, the exact sibling checkout layout,
+a Git repository at `../go-tcg-storage`, and HEAD at the recovered upstream
+commit above. The sibling checkout must also be clean: no staged changes,
+unstaged changes, or untracked files.
 
 ---
 
@@ -74,25 +79,23 @@ stdout: {"ok": <bool>, "error": <str|null>, "response_len": <int>,
 Run these in order from the repo root:
 
 ```bash
-# 1. Build the probe (confirm no compile errors)
-cd integrations/go-tcg-storage && go build ./cmd/wb_tcg_probe/ && cd ../..
-
-# 2. Unit/contract tests
-python3 -m pytest tests/test_tcg_adapter_contract.py -v
-
-# 3. Full M2 run (generates evidence artifact)
-python3 tools/run_m2_tcg.py
-
-# 4. Verify artifact fields
-python3 -c "
-import json; d = json.load(open('evidence/m2/EP-M2-go-tcg-storage-draft.json'))
-assert d['schema_version'] == 'm2-draft'
-assert d['trial_count'] == 39
-print('artifact ok, trial_count =', d['trial_count'])
-"
+make m2-verify
 ```
 
-All four commands must exit 0. The evidence artifact must not be committed.
+The command must exit 0. It runs the M2 preflight, builds the probe, generates
+the draft evidence artifact, validates the artifact, and runs the Python tests.
+The generated evidence artifact must not be committed.
+
+Newly generated M2 draft artifacts include:
+
+```json
+{
+  "upstream_repository": "https://github.com/open-source-firmware/go-tcg-storage",
+  "upstream_commit": "f99905c99780c82856226b20b59fb4863d83ae0d"
+}
+```
+
+Already submitted canonical evidence artifacts are not rewritten by this path.
 
 ---
 

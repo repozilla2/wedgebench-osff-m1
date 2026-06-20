@@ -93,6 +93,19 @@ VALID_LATENCY_SCOPES = {"harness_roundtrip", "parser_execution", "transport_only
 VALID_PARSERS        = {"safe", "vuln"}
 
 
+def _type_name(expected_type):
+    if isinstance(expected_type, tuple):
+        return " | ".join(t.__name__ for t in expected_type)
+    return expected_type.__name__
+
+
+def _is_expected_type(val, expected_type) -> bool:
+    types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
+    if int in types and isinstance(val, bool):
+        return False
+    return isinstance(val, types)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Validator
 # ══════════════════════════════════════════════════════════════════════════════
@@ -129,8 +142,8 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
             r.error(f"{label}Missing required field: '{field}'")
             continue
         val = ev[field]
-        if not isinstance(val, expected_type):
-            r.error(f"{label}Field '{field}': expected {expected_type.__name__}, "
+        if not _is_expected_type(val, expected_type):
+            r.error(f"{label}Field '{field}': expected {_type_name(expected_type)}, "
                     f"got {type(val).__name__} ({val!r})")
 
     if r.errors:
@@ -157,13 +170,13 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
 
     # ── Optional fields: type-check if present ────────────────────────────
     for field, expected_type in OPTIONAL_TOP_LEVEL.items():
-        if field in ev and not isinstance(ev[field], expected_type):
-            r.error(f"{label}Optional field '{field}': expected {expected_type.__name__}, "
+        if field in ev and not _is_expected_type(ev[field], expected_type):
+            r.error(f"{label}Optional field '{field}': expected {_type_name(expected_type)}, "
                     f"got {type(ev[field]).__name__}")
 
     # ── Non-negative integers ─────────────────────────────────────────────
     for field in NON_NEGATIVE_INT_FIELDS:
-        if field in ev and isinstance(ev[field], int):
+        if field in ev and isinstance(ev[field], int) and not isinstance(ev[field], bool):
             if ev[field] < 0:
                 r.error(f"{label}Field '{field}' must be >= 0, got {ev[field]}")
 
@@ -189,11 +202,11 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
             continue
         val = ld[field]
         if isinstance(expected, tuple):
-            if not isinstance(val, expected):
+            if not _is_expected_type(val, expected):
                 r.error(f"{label}latency_distribution.{field}: expected "
                         f"{[t.__name__ for t in expected]}, got {type(val).__name__}")
         else:
-            if not isinstance(val, expected):
+            if not _is_expected_type(val, expected):
                 r.error(f"{label}latency_distribution.{field}: expected "
                         f"{expected.__name__}, got {type(val).__name__}")
 
@@ -214,7 +227,13 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
     trial_count = ev.get("trial_count", 0)
     wedge_count = ev.get("wedge_count", 0)
     crash_count = ev.get("crash_count", 0)
-    if isinstance(n, int) and isinstance(trial_count, int) and n > trial_count:
+    if (
+        isinstance(n, int)
+        and not isinstance(n, bool)
+        and isinstance(trial_count, int)
+        and not isinstance(trial_count, bool)
+        and n > trial_count
+    ):
         r.error(f"{label}latency_distribution.n ({n}) > trial_count ({trial_count})")
 
     # ── Wedge categories (optional — only validated if present) ───────────
@@ -223,7 +242,7 @@ def validate_single(ev: dict, name: str = "") -> ValidationResult:
         for field in WEDGE_CATEGORY_FIELDS:
             if field not in wc:
                 r.warn(f"{label}wedge_categories missing '{field}'")
-            elif not isinstance(wc[field], int) or wc[field] < 0:
+            elif not _is_expected_type(wc[field], int) or wc[field] < 0:
                 r.error(f"{label}wedge_categories.{field} must be int >= 0")
         cat_sum = sum(wc.get(f, 0) for f in WEDGE_CATEGORY_FIELDS)
         if cat_sum != wedge_count:

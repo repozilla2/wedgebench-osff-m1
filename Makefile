@@ -1,4 +1,4 @@
-.PHONY: reproduce osff-verify m2-tcg test validate clean corpus local clean-all m2-verify
+.PHONY: reproduce osff-verify m2-preflight m2-tcg test validate clean corpus local clean-all m2-verify
 
 # One-command Docker reproduce for M1.
 reproduce:
@@ -11,16 +11,11 @@ osff-verify:
 	@echo "== M1 Docker reproducibility =="
 	docker compose run --rm sentinel-m1
 	@echo ""
-	@echo "== M2 TCG adapter draft generation =="
-	python3 tools/run_m2_tcg.py
-	@echo ""
-	@echo "== Pytest contract suite =="
-	pytest -q
-	@echo ""
+	$(MAKE) m2-verify
 	@echo "== OSFF verification complete =="
 
 # Generate the M2 draft TCG adapter artifact.
-m2-tcg:
+m2-tcg: m2-preflight
 	python3 tools/run_m2_tcg.py
 
 # Run tests.
@@ -51,7 +46,11 @@ clean-all: clean
 	rm -rf corpus/
 
 # Reviewer-facing M2 reference integration verification.
-m2-verify:
+m2-preflight:
+	@echo "== M2 environment preflight =="
+	python3 tools/check_m2_environment.py
+
+m2-verify: m2-preflight
 	@echo "== M2 go-tcg-storage reference integration =="
 	cd integrations/go-tcg-storage && go build ./cmd/wb_tcg_probe/
 	@echo ""
@@ -65,4 +64,3 @@ m2-verify:
 	pytest -q
 	@echo ""
 	@echo "== M2 verification complete =="
-
