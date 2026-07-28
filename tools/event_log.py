@@ -16,7 +16,7 @@ load_events(path)            -> list    read all events from a JSONL file
 Schema
 ------
 {
-    "schema_version":      str,    # e.g. "m3-draft"
+    "schema_version":      str,    # "m3-log-v1"
     "run_id":              str,    # caller-supplied run identifier
     "sequence":            int,    # 0-based, monotonically increasing
     "timestamp_utc":       str,    # ISO 8601, UTC
@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "m3-draft"
+SCHEMA_VERSION = "m3-log-v1"
 
 
 # ── Canonical JSON ────────────────────────────────────────────────────────────

@@ -64,7 +64,7 @@ def test_canonical_json_equal_for_same_content_different_insertion_order():
 # ── hash_event ────────────────────────────────────────────────────────────────
 
 def test_hash_event_returns_hex_string():
-    body = {"schema_version": "m3-draft", "sequence": 0, "payload": {}}
+    body = {"schema_version": "m3-log-v1", "sequence": 0, "payload": {}}
     result = hash_event(body)
     assert isinstance(result, str)
     assert len(result) == 64
@@ -105,9 +105,10 @@ def test_create_event_contains_all_required_fields():
     assert required.issubset(ev.keys())
 
 
-def test_create_event_schema_version_is_m3_draft():
+def test_create_event_schema_version_is_m3_log_v1():
     ev = _event()
-    assert ev["schema_version"] == SCHEMA_VERSION
+    assert SCHEMA_VERSION == "m3-log-v1"
+    assert ev["schema_version"] == "m3-log-v1"
 
 
 def test_create_event_first_event_has_null_previous_hash():

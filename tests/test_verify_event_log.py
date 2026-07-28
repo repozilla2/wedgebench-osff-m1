@@ -235,6 +235,71 @@ def test_missing_required_field_fails(field):
     assert any(field in e for e in r.errors)
 
 
+# ── Field type and format validation ─────────────────────────────────────────
+
+def test_event_must_be_an_object():
+    r = verify([["not", "an", "object"]])
+    assert not r.passed
+    assert any("event must be an object" in e for e in r.errors)
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("schema_version", 3),
+    ("run_id", ["run"]),
+    ("sequence", True),
+    ("timestamp_utc", 0),
+    ("event_type", None),
+    ("payload", []),
+    ("previous_event_hash", 7),
+    ("event_hash", 9),
+])
+def test_malformed_required_field_type_fails_cleanly(field, value):
+    event = _chain(1)[0]
+    event[field] = value
+
+    r = verify([event])
+
+    assert not r.passed
+    assert any(field in error for error in r.errors)
+
+
+def test_event_hash_must_be_64_character_hexadecimal_string():
+    event = _chain(1)[0]
+    event["event_hash"] = "z" * 64
+
+    r = verify([event])
+
+    assert not r.passed
+    assert any("event_hash" in error and "hexadecimal" in error for error in r.errors)
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("artifact_path", 123),
+    ("artifact_sha256", None),
+])
+def test_malformed_artifact_field_type_fails_cleanly(field, value):
+    event = _chain(1)[0]
+    event["payload"][field] = value
+
+    r = verify([event])
+
+    assert not r.passed
+    assert any(field in error for error in r.errors)
+
+
+def test_artifact_sha256_must_be_64_character_hexadecimal_string():
+    event = _chain(1)[0]
+    event["payload"]["artifact_sha256"] = "not-a-sha256"
+
+    r = verify([event])
+
+    assert not r.passed
+    assert any(
+        "artifact_sha256" in error and "hexadecimal" in error
+        for error in r.errors
+    )
+
+
 # ── Schema version ────────────────────────────────────────────────────────────
 
 def test_accepted_schema_version_m3_log_v1_passes():
@@ -243,6 +308,16 @@ def test_accepted_schema_version_m3_log_v1_passes():
     body = {k: v for k, v in events[0].items() if k != "event_hash"}
     events[0] = {**events[0], "event_hash": hash_event(body)}
     assert verify(events).passed
+
+
+def test_draft_schema_version_fails():
+    events = _chain(1)
+    events[0] = {**events[0], "schema_version": "m3-draft"}
+    body = {k: v for k, v in events[0].items() if k != "event_hash"}
+    events[0] = {**events[0], "event_hash": hash_event(body)}
+    r = verify(events)
+    assert not r.passed
+    assert any("schema_version" in e for e in r.errors)
 
 
 def test_unknown_schema_version_fails():
@@ -349,6 +424,24 @@ def test_cli_fails_on_tampered_log(tmp_path):
     )
     assert result.returncode == 1
     assert "M3 event log: FAIL" in result.stdout
+
+
+def test_cli_exits_1_without_traceback_on_malformed_log(tmp_path):
+    log = tmp_path / "malformed.jsonl"
+    event = _chain(1)[0]
+    event["sequence"] = True
+    log.write_text(json.dumps(event) + "\n")
+
+    result = subprocess.run(
+        [sys.executable, "tools/verify_event_log.py", str(log)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert "M3 event log: FAIL" in result.stdout
+    assert "Traceback" not in result.stdout + result.stderr
 
 
 def test_cli_exits_2_on_missing_file():

@@ -1,5 +1,5 @@
 """
-Tests for tools/run_m3_demo.py — M3 internal demo runner.
+Tests for tools/run_m3_demo.py — M3 demo runner.
 """
 import json
 import subprocess
@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from tools.event_log import load_events
-from tools.run_m3_demo import run
+import tools.run_m3_demo as run_m3_demo
 from tools.verify_event_log import verify
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +27,7 @@ REQUIRED_EVENT_TYPES = {
 
 def _run_demo(tmp_path: Path) -> tuple[int, Path]:
     log = tmp_path / "WBLOG-M3-demo.jsonl"
-    rc = run(log)
+    rc = run_m3_demo.run(log)
     return rc, log
 
 
@@ -174,13 +174,111 @@ def test_second_run_replaces_log(tmp_path):
     _, log = _run_demo(tmp_path)
     first_hash = log.read_bytes()
 
-    run(log)  # run again
+    run_m3_demo.run(log)  # run again
     second_events = load_events(log)
     # New run_id means the log is fresh, not appended
     run_ids = {ev["run_id"] for ev in second_events}
     assert len(run_ids) == 1
     seqs = [ev["sequence"] for ev in second_events]
     assert seqs[0] == 0  # starts from 0, not a continuation
+
+
+# ── Current-run M2 artifact requirement ──────────────────────────────────────
+
+def test_failed_m2_generation_cannot_reuse_stale_artifact(tmp_path, monkeypatch):
+    monkeypatch.setattr(run_m3_demo, "_REPO_ROOT", tmp_path)
+    artifact = (
+        tmp_path / "evidence" / "m2" / "EP-M2-go-tcg-storage-draft.json"
+    )
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text('{"stale": true}\n')
+
+    def fail_generation():
+        assert not artifact.exists()
+        return 1
+
+    monkeypatch.setattr(
+        run_m3_demo, "_load_m2_generator_main", lambda: fail_generation
+    )
+
+    log = tmp_path / "failure.jsonl"
+    assert run_m3_demo.run(log) == 1
+    assert not artifact.exists()
+
+
+def test_generator_exception_removes_partial_artifact_and_reraises(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(run_m3_demo, "_REPO_ROOT", tmp_path)
+    evidence_dir = tmp_path / "evidence" / "m2"
+    evidence_dir.mkdir(parents=True)
+    artifact = evidence_dir / "EP-M2-go-tcg-storage-draft.json"
+
+    def raise_after_partial_write():
+        artifact.write_text('{"partial": true}\n')
+        raise RuntimeError("generator failed after partial write")
+
+    monkeypatch.setattr(
+        run_m3_demo,
+        "_load_m2_generator_main",
+        lambda: raise_after_partial_write,
+    )
+
+    with pytest.raises(RuntimeError, match="generator failed after partial write"):
+        run_m3_demo._run_m2(evidence_dir)
+    assert not artifact.exists()
+
+
+def test_failed_m2_generation_produces_failure_log(tmp_path, monkeypatch):
+    monkeypatch.setattr(run_m3_demo, "_REPO_ROOT", tmp_path)
+    monkeypatch.setattr(
+        run_m3_demo, "_load_m2_generator_main", lambda: (lambda: 1)
+    )
+
+    log = tmp_path / "failure.jsonl"
+    assert run_m3_demo.run(log) == 1
+    events = load_events(log)
+    generated = next(e for e in events if e["event_type"] == "m2_evidence_generated")
+    validated = next(e for e in events if e["event_type"] == "m2_evidence_validated")
+    completed = next(e for e in events if e["event_type"] == "run_completed")
+
+    assert generated["payload"]["ok"] is False
+    assert "artifact_sha256" not in generated["payload"]
+    assert "status 1" in generated["payload"]["error"]
+    assert validated["payload"]["ok"] is False
+    assert "generated failed" in validated["payload"]["error"]
+    assert completed["payload"]["success"] is False
+    assert verify(events).passed
+
+
+def test_successful_current_m2_generation_passes(tmp_path, monkeypatch):
+    monkeypatch.setattr(run_m3_demo, "_REPO_ROOT", tmp_path)
+    artifact = (
+        tmp_path / "evidence" / "m2" / "EP-M2-go-tcg-storage-draft.json"
+    )
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text('{"stale": true}\n')
+
+    def generate_current_artifact():
+        assert not artifact.exists()
+        artifact.write_text('{"current": true}\n')
+        return 0
+
+    monkeypatch.setattr(
+        run_m3_demo, "_load_m2_generator_main", lambda: generate_current_artifact
+    )
+    monkeypatch.setattr(run_m3_demo, "_validate_m2", lambda path: path == artifact)
+
+    log = tmp_path / "success.jsonl"
+    assert run_m3_demo.run(log) == 0
+    events = load_events(log)
+    generated = next(e for e in events if e["event_type"] == "m2_evidence_generated")
+    completed = next(e for e in events if e["event_type"] == "run_completed")
+
+    assert json.loads(artifact.read_text()) == {"current": True}
+    assert generated["payload"]["ok"] is True
+    assert completed["payload"]["success"] is True
+    assert verify(events).passed
 
 
 # ── CLI integration ───────────────────────────────────────────────────────────

@@ -27,6 +27,7 @@ Exit codes:
 from __future__ import annotations
 
 import hashlib
+import re
 import sys
 from pathlib import Path
 
@@ -37,7 +38,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from tools.event_log import SCHEMA_VERSION, hash_event, load_events
 
-ACCEPTED_SCHEMA_VERSIONS = {SCHEMA_VERSION, "m3-log-v1"}
+ACCEPTED_SCHEMA_VERSIONS = {SCHEMA_VERSION}
 
 REQUIRED_FIELDS = (
     "schema_version",
@@ -49,6 +50,8 @@ REQUIRED_FIELDS = (
     "previous_event_hash",
     "event_hash",
 )
+
+_SHA256_RE = re.compile(r"[0-9a-fA-F]{64}\Z")
 
 
 # ── Result accumulator ────────────────────────────────────────────────────────
@@ -75,7 +78,12 @@ class _Result:
 
 # ── Core verifier ─────────────────────────────────────────────────────────────
 
-def verify(events: list[dict]) -> _Result:
+def _type_names(expected: type | tuple[type, ...]) -> str:
+    types = expected if isinstance(expected, tuple) else (expected,)
+    return " or ".join(item.__name__ for item in types)
+
+
+def verify(events: list[object]) -> _Result:
     """Verify a list of event dicts loaded from a JSONL log.
 
     Returns a _Result whose .passed reflects whether all integrity checks
@@ -87,19 +95,77 @@ def verify(events: list[dict]) -> _Result:
         r.error("Log is empty — no events to verify")
         return r
 
-    # ── Per-event checks ──────────────────────────────────────────────────
+    # ── Per-event structure and type checks ───────────────────────────────
     for i, ev in enumerate(events):
         label = f"event[{i}]"
+
+        if not isinstance(ev, dict):
+            r.error(f"{label}: event must be an object, got {type(ev).__name__}")
+            continue
 
         # Required fields
         for field in REQUIRED_FIELDS:
             if field not in ev:
                 r.error(f"{label}: missing required field '{field}'")
 
-        # Bail on this event if structure is too broken to continue
+        # Bail on this event if fields are missing, but continue checking the
+        # remaining events so callers receive all safe structural diagnostics.
         missing = [f for f in REQUIRED_FIELDS if f not in ev]
         if missing:
             continue
+
+        expected_types = {
+            "schema_version": str,
+            "run_id": str,
+            "timestamp_utc": str,
+            "event_type": str,
+            "payload": dict,
+            "previous_event_hash": (str, type(None)),
+            "event_hash": str,
+        }
+        for field, expected in expected_types.items():
+            if not isinstance(ev[field], expected):
+                r.error(
+                    f"{label}: {field} must be {_type_names(expected)}, "
+                    f"got {type(ev[field]).__name__}"
+                )
+
+        if not isinstance(ev["sequence"], int) or isinstance(ev["sequence"], bool):
+            r.error(
+                f"{label}: sequence must be int (not bool), "
+                f"got {type(ev['sequence']).__name__}"
+            )
+
+        event_hash = ev["event_hash"]
+        if isinstance(event_hash, str) and not _SHA256_RE.fullmatch(event_hash):
+            r.error(f"{label}: event_hash must be a 64-character hexadecimal string")
+
+        payload = ev["payload"]
+        if isinstance(payload, dict):
+            for field in ("artifact_path", "artifact_sha256"):
+                if field in payload and not isinstance(payload[field], str):
+                    r.error(
+                        f"{label}: payload.{field} must be str when supplied, "
+                        f"got {type(payload[field]).__name__}"
+                    )
+
+            artifact_sha256 = payload.get("artifact_sha256")
+            if (
+                isinstance(artifact_sha256, str)
+                and not _SHA256_RE.fullmatch(artifact_sha256)
+            ):
+                r.error(
+                    f"{label}: payload.artifact_sha256 must be a "
+                    "64-character hexadecimal string"
+                )
+
+    # Cross-event checks must never receive structurally malformed values.
+    if not r.passed:
+        return r
+
+    # ── Per-event integrity checks ────────────────────────────────────────
+    for i, ev in enumerate(events):
+        label = f"event[{i}]"
 
         # schema_version
         if ev["schema_version"] not in ACCEPTED_SCHEMA_VERSIONS:
@@ -110,7 +176,11 @@ def verify(events: list[dict]) -> _Result:
 
         # event_hash recomputation
         body = {k: v for k, v in ev.items() if k != "event_hash"}
-        expected_hash = hash_event(body)
+        try:
+            expected_hash = hash_event(body)
+        except (TypeError, ValueError) as exc:
+            r.error(f"{label}: event cannot be hashed: {exc}")
+            continue
         if ev["event_hash"] != expected_hash:
             r.error(
                 f"{label}: event_hash mismatch — stored {ev['event_hash']!r}, "
@@ -118,13 +188,14 @@ def verify(events: list[dict]) -> _Result:
             )
 
         # Artifact hash (optional, only when payload carries both keys)
-        payload = ev.get("payload") or {}
-        if isinstance(payload, dict):
-            artifact_path = payload.get("artifact_path")
-            artifact_sha256 = payload.get("artifact_sha256")
-            if artifact_path is not None and artifact_sha256 is not None:
-                p = Path(artifact_path)
-                if p.exists():
+        payload = ev["payload"]
+        artifact_path = payload.get("artifact_path")
+        artifact_sha256 = payload.get("artifact_sha256")
+        if artifact_path is not None and artifact_sha256 is not None:
+            p = Path(artifact_path)
+            try:
+                exists = p.exists()
+                if exists:
                     actual = hashlib.sha256(p.read_bytes()).hexdigest()
                     if actual != artifact_sha256:
                         r.error(
@@ -136,6 +207,8 @@ def verify(events: list[dict]) -> _Result:
                         f"{label}: artifact_path {artifact_path!r} not found; "
                         "artifact hash check skipped"
                     )
+            except OSError as exc:
+                r.error(f"{label}: could not read artifact_path {artifact_path!r}: {exc}")
 
     # Stop cross-event checks if per-event errors make them unreliable
     if not r.passed:

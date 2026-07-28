@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-run_m3_demo.py — WedgeBench M3 internal demo runner.
+run_m3_demo.py — WedgeBench M3 demo runner.
 
 Wraps the M2 evidence workflow in a tamper-evident JSONL event log:
 
   run_started
   m2_evidence_generated   (payload includes artifact_path, artifact_sha256)
   m2_evidence_validated
+  tests_skipped
   run_completed
 
 The resulting log is written to evidence/m3/WBLOG-M3-demo.jsonl by default
 and is verified by tools/verify_event_log.py on completion.
 
 Usage:
-    python3 tools/run_m3_demo.py [--log-path PATH] [--skip-tests]
+    python3 tools/run_m3_demo.py [--log-path PATH]
 
 Exit codes:
     0 — all steps passed, log verified
@@ -46,8 +47,8 @@ def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _run_m2(evidence_dir: Path) -> Path:
-    """Run the M2 evidence generator and return the artifact path."""
+def _load_m2_generator_main():
+    """Load and return the M2 generator entry point."""
     # Import here to keep the path-bootstrap side-effect contained.
     # run_m2_tcg imports tcg_adapter which lives in tools/; we need the
     # tools/ directory importable for that relative import to work.
@@ -62,9 +63,32 @@ def _run_m2(evidence_dir: Path) -> Path:
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    mod.main()
+    return mod.main
 
-    return evidence_dir / "EP-M2-go-tcg-storage-draft.json"
+
+def _run_m2(evidence_dir: Path) -> Path:
+    """Run M2 and return only a fresh artifact from a successful invocation."""
+    artifact_path = evidence_dir / "EP-M2-go-tcg-storage-draft.json"
+    if artifact_path.exists():
+        artifact_path.unlink()
+
+    try:
+        return_code = _load_m2_generator_main()()
+    except Exception:
+        if artifact_path.exists():
+            artifact_path.unlink()
+        raise
+    if return_code != 0:
+        if artifact_path.exists():
+            artifact_path.unlink()
+        raise RuntimeError(f"M2 evidence generator exited with status {return_code}")
+
+    if not artifact_path.is_file():
+        raise FileNotFoundError(
+            f"M2 evidence generator did not produce expected artifact: {artifact_path}"
+        )
+
+    return artifact_path
 
 
 def _validate_m2(artifact_path: Path) -> bool:
@@ -115,8 +139,8 @@ def run(log_path: Path) -> int:
 
     # ── m2_evidence_generated ─────────────────────────────────────────────
     try:
-        _run_m2(m2_evidence_dir)
-        sha256 = _sha256_file(m2_artifact_path)
+        generated_path = _run_m2(m2_evidence_dir)
+        sha256 = _sha256_file(generated_path)
         _emit("m2_evidence_generated", {
             "artifact_path": str(m2_artifact_path),
             "artifact_sha256": sha256,
@@ -127,7 +151,6 @@ def run(log_path: Path) -> int:
         failed = True
         _emit("m2_evidence_generated", {
             "artifact_path": str(m2_artifact_path),
-            "artifact_sha256": None,
             "ok": False,
             "error": str(exc),
         })
@@ -149,7 +172,6 @@ def run(log_path: Path) -> int:
             failed = True
             _emit("m2_evidence_validated", {
                 "artifact_path": str(m2_artifact_path),
-                "artifact_sha256": None,
                 "validation_passed": False,
                 "ok": False,
                 "error": str(exc),
@@ -157,7 +179,6 @@ def run(log_path: Path) -> int:
     else:
         _emit("m2_evidence_validated", {
             "artifact_path": str(m2_artifact_path),
-            "artifact_sha256": None,
             "validation_passed": False,
             "ok": False,
             "error": "skipped — m2_evidence_generated failed",
@@ -196,7 +217,7 @@ def run(log_path: Path) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="WedgeBench M3 internal demo runner"
+        description="WedgeBench M3 demo runner"
     )
     ap.add_argument(
         "--log-path",
