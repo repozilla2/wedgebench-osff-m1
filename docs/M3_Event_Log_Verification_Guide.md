@@ -1,185 +1,212 @@
 # M3 Event Log Verification Guide
 
-**Status:** Internal draft — M3 go-tcg-storage tamper-evident logging
-**Scope:** Internal use only. Do not publish, submit, or tag.
-
----
-
 ## Purpose
 
-M3 adds a tamper-evident event log layer around the M2 evidence workflow.
-Each run of the evidence pipeline emits a JSONL hash-chain log that records
-what happened, in what order, and with what artifact hashes.
+M3 adds a tamper-evident JSONL event log around the M2 evidence workflow. This
+guide is for reviewers who want to generate a log, inspect its claim boundary,
+and run the public verifier.
 
-The goal is not cryptographic signing or attestation. The goal is to make
-post-hoc tampering with the evidence workflow detectable.
+The canonical public event schema is `m3-log-v1`.
 
----
+## What M3 Proves
 
-## What the Event Log Proves
+A log that passes `tools/verify_event_log.py` is internally consistent at the
+time it is checked:
 
-The hash-chain log provides the following observable guarantees:
+- every event has the required fields and uses `m3-log-v1`;
+- each `event_hash` matches the canonical JSON content of that event;
+- each `previous_event_hash` links to the preceding event;
+- sequence numbers are contiguous and the `run_id` is consistent; and
+- when a referenced artifact is present, its current SHA-256 matches the
+  `artifact_sha256` recorded in the event.
 
-| Claim | Mechanism |
-|---|---|
-| **Event sequence** | `sequence` field increments by 1; any gap or reorder breaks verification |
-| **Artifact hash continuity** | `artifact_sha256` in `m2_evidence_generated` and `m2_evidence_validated` payloads is a SHA-256 of the artifact at the time of emission; recomputable |
-| **Hash-chain integrity** | Each event's `event_hash` covers all fields including `previous_event_hash`; editing any event breaks all subsequent hashes |
-| **Evidence steps occurred in order** | Required event types appear in a fixed sequence: `run_started` → `m2_evidence_generated` → `m2_evidence_validated` → `tests_skipped` → `run_completed` |
-| **Single run_id per log** | All events in a log share one `run_id`; cross-run splicing is detectable |
+For logs produced by `tools/run_m3_demo.py`, the recorded workflow also shows
+whether the current M2 generation and validation steps succeeded. The runner
+removes the expected M2 output before generation, requires the M2 generator to
+return zero, and requires that invocation to produce the expected artifact
+before it emits a successful generation event.
 
-A log that passes `verify_event_log.py` means: at the time the log was
-written, these steps ran in this order and produced an artifact with this
-hash. Any subsequent modification of the log or artifact is detectable by
-re-running verification.
+These are bounded integrity checks. A passing log is not proof that an
+unobserved real-world action occurred or that the event producer is trusted.
 
----
+## What M3 Does Not Prove
 
-## What the Event Log Does Not Prove
+M3 does not provide:
 
-M3 is a hash-chain tamper-evidence layer, not a signature or attestation
-system. The following claims are explicitly out of scope:
+- cryptographic signing or signer identity;
+- source, operator, machine, or artifact provenance attestation;
+- a trusted timestamp or external time authority;
+- tamper-proof or write-protected storage;
+- certification or a formal proof of correctness;
+- exploit discovery, production firmware validation, or physical-device
+  validation; or
+- device-native timing. M2 `latency_us` values remain host adapter timing.
 
-- **Tamper-proof storage.** The log file itself is not encrypted or write-protected. An adversary with filesystem access can delete and replace it. The chain detects tampering only if the original log is available for comparison.
-- **Cryptographic signing.** Events are not signed by a key. There is no key management, certificate infrastructure, or public-key verification.
-- **External timestamping.** `timestamp_utc` is the local system clock at time of emission. It is not anchored to a trusted time authority and may not be accurate.
-- **Physical-device timing.** `latency_us` fields in M2 artifact events are host adapter wall-clock time, not hardware timing. No firmware timing claims are made.
-- **Exploit discovery.** The log records whether the M2 adapter accepted, rejected, or wedged on corpus inputs. It does not identify or demonstrate security vulnerabilities.
-- **Formal safety proof.** Log verification is not a formal proof of correctness, soundness, or completeness for any parser or firmware target.
-- **Production firmware validation.** The pipeline runs against a fake hardware stub. No physical device is involved.
+No event is signed, and no key, certificate, identity, or provenance chain is
+associated with a log.
 
----
+## Hash Behavior
+
+Each event contains an `event_hash` computed as:
+
+```text
+sha256(canonical_json(event_without_event_hash))
+```
+
+Canonical JSON sorts object keys, uses compact separators, and encodes as
+UTF-8. The hash therefore covers the schema, run ID, sequence, timestamp,
+event type, payload, and `previous_event_hash`.
+
+The first event has `previous_event_hash: null`. Every later event records the
+preceding event's `event_hash`. Editing an event without recomputing its hash is
+detected. Reordering, deleting, or inserting events without rebuilding the
+affected chain is also detected.
+
+This design is tamper-evident, not tamper-proof. A party able to replace the
+whole log can recompute an unsigned chain, and a log can be deleted. M3 has no
+external signed anchor against which to distinguish such a replacement. Keep
+independent copies or digests when stronger change detection is needed.
+
+## Artifact Hash Checking
+
+The `m2_evidence_generated` and `m2_evidence_validated` payloads include an
+`artifact_path` and `artifact_sha256`. When the referenced artifact is present,
+the verifier recomputes its SHA-256 and fails on a mismatch. If the artifact is
+absent, the verifier reports a warning and skips that artifact comparison.
+
+Accordingly, artifact modification is checked only when the referenced
+artifact is present at verification time. The event chain still verifies the
+recorded digest as event content, but it cannot compare that digest with a
+missing file.
+
+## Time Behavior
+
+`timestamp_utc` is read from the machine's local system clock and formatted as
+UTC. It is not synchronized or anchored by M3 to a trusted timestamp service.
+Hashing protects the timestamp text from unrecomputed edits inside the chain;
+it does not establish that the clock was accurate or that the event occurred
+at the stated time.
 
 ## Event Schema
 
-Each line of the JSONL log is a JSON object with these fields:
+Each JSONL line is one event:
 
 ```json
 {
-    "schema_version":      "m3-draft",
-    "run_id":              "<uuid>",
-    "sequence":            0,
-    "timestamp_utc":       "2026-05-11T00:00:00.000000Z",
-    "event_type":          "run_started",
-    "payload":             {},
-    "previous_event_hash": null,
-    "event_hash":          "<sha256-hex>"
+  "schema_version": "m3-log-v1",
+  "run_id": "<run-identifier>",
+  "sequence": 0,
+  "timestamp_utc": "2026-05-11T00:00:00.000000Z",
+  "event_type": "run_started",
+  "payload": {},
+  "previous_event_hash": null,
+  "event_hash": "<sha256-hex>"
 }
 ```
 
-`event_hash` is `sha256(canonical_json(event_without_event_hash))` where
-canonical JSON uses sorted keys and no extra whitespace.
+The public verifier accepts `m3-log-v1`. Unknown schema versions, including
+the former generator label, fail verification.
 
----
+## Demo Event Sequence
 
-## Required Event Sequence
+`tools/run_m3_demo.py` emits exactly five events in this order:
 
-Every demo log must contain these five event types in this order:
-
-```
+```text
 run_started
-m2_evidence_generated    ← payload includes artifact_path, artifact_sha256
-m2_evidence_validated    ← payload includes artifact_path, artifact_sha256
-tests_skipped            ← payload includes reason, acceptance_command
-run_completed            ← payload includes success, events_emitted
+m2_evidence_generated
+m2_evidence_validated
+tests_skipped
+run_completed
 ```
 
----
+`tests_skipped` is explicit because the demo runner covers M2 artifact
+generation, M2 artifact validation, and event-log plumbing; it does not run the
+Python test suite inside the event chain. This keeps test execution from being
+misrepresented as a chained workflow event.
 
-## How to Generate a Demo Log
+`make m3-verify` runs tests separately, after demo generation and standalone
+log verification. Those tests are acceptance checks outside the five-event
+chain.
+
+## Generate and Verify
+
+From the repository root:
 
 ```bash
 python3 tools/run_m3_demo.py
-```
-
-This will:
-1. Regenerate the M2 evidence artifact via `tools/run_m2_tcg.py`
-2. Validate the artifact via `tools/validate_m2_evidence.py`
-3. Emit five hash-chained events to `evidence/m3/WBLOG-M3-demo.jsonl`
-4. Self-verify the log before exiting
-
-Expected output:
-```
-M3 demo log: PASS
-log_path=evidence/m3/WBLOG-M3-demo.jsonl
-events_emitted=5
-```
-
-To write the log to a custom path:
-```bash
-python3 tools/run_m3_demo.py --log-path /path/to/custom.jsonl
-```
-
----
-
-## How to Verify a Log
-
-```bash
 python3 tools/verify_event_log.py evidence/m3/WBLOG-M3-demo.jsonl
 ```
 
-The verifier checks:
+The default output is `evidence/m3/WBLOG-M3-demo.jsonl`. To choose another
+repository-relative output path:
 
-- All required fields present on every event
-- `schema_version` is an accepted value (`m3-draft` or `m3-log-v1`)
-- `event_hash` recomputes correctly for every event
-- Hash chain is intact across all events
-- First event has `previous_event_hash = null`
-- `sequence` starts at 0 or 1 and increments by 1 with no gaps
-- `run_id` is consistent across all events
-- If a payload contains `artifact_path` + `artifact_sha256` and the file
-  exists, the SHA-256 is recomputed and compared (missing files produce a
-  warning, not an error)
-
-Expected output on a clean log:
-```
-M3 event log: PASS
-events_verified=5
+```bash
+python3 tools/run_m3_demo.py --log-path evidence/m3/reviewer-run.jsonl
 ```
 
-Exit codes: `0` = PASS, `1` = FAIL, `2` = usage/file error.
+The runner exits `0` only when current-run M2 generation succeeds, the expected
+artifact is produced and validates, and the resulting log self-verifies. It
+exits `1` for workflow or integrity failure.
 
----
+The standalone verifier exits `0` for PASS, `1` for integrity errors, and `2`
+for usage or file errors.
 
-## Internal Verification Command
+“M3 event log: PASS” means log integrity passed, not necessarily that the
+recorded workflow succeeded. Review `run_completed.payload.success` and the
+runner exit code to determine the workflow outcome.
+
+## Reviewer Verification
+
+Run the complete M3 acceptance path with:
 
 ```bash
 make m3-verify
 ```
 
-This runs all three steps in sequence:
+The target performs:
 
+1. M3 demo generation, including current-run M2 generation and validation.
+2. Standalone verification of the generated event log.
+3. The M3-focused Python tests, separately from the generated event chain.
+
+M3 remains a separate target. `make osff-verify` retains its M1/M2 scope and
+continues to invoke `make m2-verify`.
+
+## Committed Example
+
+The repository includes a small fixed example pair:
+
+- `examples/m3/EP-M2-example.json`
+- `examples/m3/WBLOG-M3-example.jsonl`
+
+Both files are illustrative reviewer fixtures, not canonical execution
+evidence. They use a fixed `run_id`, fixed timestamps, and repository-relative
+paths so their hashes are stable and portable.
+
+Verify the committed example from the repository root:
+
+```bash
+python3 tools/verify_event_log.py examples/m3/WBLOG-M3-example.jsonl
 ```
-== M3 demo event log generation ==
-== M3 event log verification ==
-== M3 test suite ==
-== M3 verification complete ==
+
+Expected output:
+
+```text
+M3 event log: PASS
+events_verified=5
 ```
 
-The test suite (`pytest -q tests/test_event_log.py tests/test_verify_event_log.py tests/test_run_m3_demo.py`) covers hash determinism, chain integrity, all tamper scenarios, artifact hash checks, and CLI exit codes.
+The verifier also recomputes the SHA-256 of
+`examples/m3/EP-M2-example.json` because that referenced artifact is present.
 
----
+## Implementation Map
 
-## Claim Boundary
-
-M3 is a hash-chain tamper-evidence layer, not a signature or attestation system.
-
-It answers: *"Was this log modified after it was written?"*
-
-It does not answer: *"Was this log written by a trusted party?"* or *"Was this log written at the claimed time?"*
-
-Those claims require cryptographic signing and external timestamping, which are out of scope for the current M3 draft.
-
----
-
-## File Locations
-
-| File | Role |
+| Path | Role |
 |---|---|
-| `tools/event_log.py` | Hash-chain primitives: `create_event`, `append_event`, `load_events` |
-| `tools/verify_event_log.py` | Log verifier CLI and `verify()` function |
-| `tools/run_m3_demo.py` | Demo runner: wraps M2 workflow in a tamper-evident log |
-| `evidence/m3/WBLOG-M3-demo.jsonl` | Generated log (gitignored; not committed) |
-| `tests/test_event_log.py` | Unit tests for hash-chain primitives |
-| `tests/test_verify_event_log.py` | Unit tests for the verifier |
-| `tests/test_run_m3_demo.py` | Integration tests for the demo runner |
+| `tools/event_log.py` | Canonical serialization, event hashing, and JSONL I/O |
+| `tools/verify_event_log.py` | Public event-log verifier |
+| `tools/run_m3_demo.py` | Five-event M2 workflow runner |
+| `tests/test_event_log.py` | Event construction and hash-chain tests |
+| `tests/test_verify_event_log.py` | Verifier and tamper-detection tests |
+| `tests/test_run_m3_demo.py` | Runner and stale-artifact regression tests |
+| `tests/test_m3_examples.py` | Committed example and path-hygiene tests |
