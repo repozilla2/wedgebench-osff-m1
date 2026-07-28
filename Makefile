@@ -40,6 +40,7 @@ clean:
 	rm -rf build/
 	rm -f evidence/EP-*-m1.json
 	rm -rf evidence/m2/
+	rm -rf evidence/m3/
 
 # Full clean including corpus.
 clean-all: clean
@@ -74,6 +75,6 @@ m3-verify:
 	python3 tools/verify_event_log.py evidence/m3/WBLOG-M3-demo.jsonl
 	@echo ""
 	@echo "== M3 test suite =="
-	pytest -q tests/test_event_log.py tests/test_verify_event_log.py tests/test_run_m3_demo.py
+	pytest -q tests/test_event_log.py tests/test_verify_event_log.py tests/test_run_m3_demo.py tests/test_m3_examples.py
 	@echo ""
 	@echo "== M3 verification complete =="
