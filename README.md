@@ -46,6 +46,18 @@ For the M2-specific validator-backed reference integration path:
 make m2-verify
 ```
 
+For the separate M3 tamper-evident event-log path:
+
+```bash
+make m3-verify
+```
+
+See the [M3 Event Log Verification Guide](docs/M3_Event_Log_Verification_Guide.md)
+for the public schema, verifier behavior, and claim boundary. The fixed files
+under `examples/m3/` are illustrative reviewer fixtures, not canonical
+execution evidence. M3 does not add signing, trusted timestamps, identity or
+provenance attestation, formal proof, or physical-device validation.
+
 ### Recommended (Docker — fully reproducible)
 
 ```bash
@@ -350,13 +362,16 @@ M2 intentionally remains constrained. The goal is to prove portability of the ve
 
 ### Milestone 3 — Verification Logging & Extended Replay
 
-Status: **Future scope / not publicly released**
+Status: **Release candidate for public review**
 
-Focus:
+Includes:
 - verification-oriented event logging
-- replay integrity tooling
-- extended reproducibility workflows
-- final documentation and public release
+- hash-chain and referenced-artifact verification
+- a separate `make m3-verify` acceptance path
+- portable illustrative example artifacts
+
+M3 is a bounded tamper-evidence layer. It does not expand the M1 or M2 claim
+scope and is not included in `make osff-verify`.
 
 ---
 

@@ -1,0 +1,31 @@
+{
+  "adapter": "tcg_adapter",
+  "artifact_type": "tcg_storage_adapter_draft",
+  "claim_scope": "Illustrative input for M3 event-log verification; not canonical execution evidence.",
+  "example_status": "illustrative",
+  "latency_note": "Illustrative host adapter timing only; not device-native timing.",
+  "milestone": "M2",
+  "parser_under_test": "go-tcg-storage response parser",
+  "results": [
+    {
+      "case": "example_case",
+      "error": "illustrative parser rejection",
+      "frames_accepted": 0,
+      "heartbeat_ok": true,
+      "latency_us": 0.0,
+      "ok": false,
+      "output_bytes": 0,
+      "parser_outcome": "rejected",
+      "progress": 0,
+      "response_len": 0,
+      "wedge": false,
+      "wedge_type": null
+    }
+  ],
+  "schema_version": "m2-draft",
+  "source_evidence": "Sanitized illustrative fixture committed with the M3 example log.",
+  "target": "go-tcg-storage",
+  "trial_count": 1,
+  "upstream_commit": "f99905c99780c82856226b20b59fb4863d83ae0d",
+  "upstream_repository": "https://github.com/open-source-firmware/go-tcg-storage"
+}

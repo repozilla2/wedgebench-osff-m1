@@ -16,3 +16,6 @@ evidence/m2/EP-M2-go-tcg-storage-draft.json
 # Canonical committed evidence artifacts should use explicit filenames.
 evidence/EP-*-m1.json
 !evidence/EP-20260511-m1-docker-local.json
+
+# Generated local M3 event logs; produced by tools/run_m3_demo.py
+evidence/m3/
