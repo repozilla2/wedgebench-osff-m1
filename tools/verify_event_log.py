@@ -11,9 +11,9 @@ Verifies a JSONL event log produced by tools/event_log.py:
   5. First event has previous_event_hash == null.
   6. sequence starts at 0 or 1 and increments by 1 with no gaps.
   7. run_id is consistent across all events.
-  8. If a payload contains artifact_path + artifact_sha256 and the file
-     exists, the SHA-256 is recomputed and compared.  Missing files are
-     reported as warnings, not errors.
+  8. If a payload contains artifact_path + artifact_sha256 and the path is a
+     regular, non-symlink file no larger than 64 MiB, its SHA-256 is streamed
+     and compared. Missing files are reported as warnings, not errors.
 
 Usage:
     python3 tools/verify_event_log.py <log.jsonl>
@@ -27,7 +27,10 @@ Exit codes:
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 
@@ -39,6 +42,11 @@ if str(_REPO_ROOT) not in sys.path:
 from tools.event_log import SCHEMA_VERSION, hash_event, load_events
 
 ACCEPTED_SCHEMA_VERSIONS = {SCHEMA_VERSION}
+
+# Artifact hashing is intentionally bounded. The maximum is inclusive, and
+# the chunk size prevents the verifier from loading an artifact into memory.
+MAX_ARTIFACT_SIZE_BYTES = 64 * 1024 * 1024
+ARTIFACT_HASH_CHUNK_SIZE_BYTES = 1024 * 1024
 
 REQUIRED_FIELDS = (
     "schema_version",
@@ -52,6 +60,14 @@ REQUIRED_FIELDS = (
 )
 
 _SHA256_RE = re.compile(r"[0-9a-fA-F]{64}\Z")
+
+
+class _ArtifactMissingError(Exception):
+    """The supplied artifact path was missing when first inspected."""
+
+
+class _ArtifactVerificationError(Exception):
+    """The supplied artifact could not be hashed safely within the bounds."""
 
 
 # ── Result accumulator ────────────────────────────────────────────────────────
@@ -81,6 +97,107 @@ class _Result:
 def _type_names(expected: type | tuple[type, ...]) -> str:
     types = expected if isinstance(expected, tuple) else (expected,)
     return " or ".join(item.__name__ for item in types)
+
+
+def _artifact_open_flags() -> int:
+    """Return read-only descriptor flags with available safety controls."""
+    flags = os.O_RDONLY
+    for name in ("O_BINARY", "O_CLOEXEC", "O_NOFOLLOW", "O_NONBLOCK"):
+        flags |= getattr(os, name, 0)
+    return flags
+
+
+def _same_file(first: os.stat_result, second: os.stat_result) -> bool:
+    """Return whether two stat results identify the same filesystem object."""
+    return (first.st_dev, first.st_ino) == (second.st_dev, second.st_ino)
+
+
+def _artifact_size_error(stage: str, size: int) -> _ArtifactVerificationError:
+    return _ArtifactVerificationError(
+        f"artifact {stage} size {size} bytes exceeds inclusive "
+        f"{MAX_ARTIFACT_SIZE_BYTES}-byte limit"
+    )
+
+
+def _hash_regular_artifact(path: Path) -> str:
+    """Stream a bounded SHA-256 from a final-path regular file.
+
+    The final supplied path is inspected without resolution. Descriptor flags
+    reduce symlink and blocking-file races where the platform supports them;
+    lstat/fstat identity checks reject a changed final filesystem object. This
+    is not an atomic snapshot of file contents or general path confinement.
+    """
+    try:
+        initial = path.lstat()
+    except FileNotFoundError as exc:
+        raise _ArtifactMissingError from exc
+    except (OSError, ValueError) as exc:
+        raise _ArtifactVerificationError(f"could not inspect artifact: {exc}") from exc
+
+    if stat.S_ISLNK(initial.st_mode):
+        raise _ArtifactVerificationError("artifact path is a symlink")
+    if not stat.S_ISREG(initial.st_mode):
+        raise _ArtifactVerificationError("artifact path is not a regular file")
+    if initial.st_size > MAX_ARTIFACT_SIZE_BYTES:
+        raise _artifact_size_error("initial", initial.st_size)
+
+    try:
+        fd = os.open(path, _artifact_open_flags())
+    except (OSError, ValueError) as exc:
+        raise _ArtifactVerificationError(f"could not open artifact: {exc}") from exc
+
+    try:
+        try:
+            opened = os.fstat(fd)
+            if not stat.S_ISREG(opened.st_mode):
+                raise _ArtifactVerificationError(
+                    "opened artifact descriptor is not a regular file"
+                )
+            if not _same_file(initial, opened):
+                raise _ArtifactVerificationError(
+                    "artifact path changed before it could be opened"
+                )
+            if opened.st_size > MAX_ARTIFACT_SIZE_BYTES:
+                raise _artifact_size_error("observed", opened.st_size)
+
+            digest = hashlib.sha256()
+            bytes_read = 0
+            while True:
+                # One byte beyond the inclusive limit is sufficient to reject
+                # a file that grows while it is being streamed.
+                remaining = MAX_ARTIFACT_SIZE_BYTES + 1 - bytes_read
+                chunk = os.read(
+                    fd,
+                    min(ARTIFACT_HASH_CHUNK_SIZE_BYTES, remaining),
+                )
+                if not chunk:
+                    break
+                bytes_read += len(chunk)
+                if bytes_read > MAX_ARTIFACT_SIZE_BYTES:
+                    raise _artifact_size_error("streamed", bytes_read)
+                digest.update(chunk)
+
+            final = os.fstat(fd)
+            if not stat.S_ISREG(final.st_mode):
+                raise _ArtifactVerificationError(
+                    "final artifact descriptor is not a regular file"
+                )
+            if not _same_file(opened, final):
+                raise _ArtifactVerificationError(
+                    "artifact descriptor identity changed during hashing"
+                )
+            if final.st_size > MAX_ARTIFACT_SIZE_BYTES:
+                raise _artifact_size_error("final", final.st_size)
+            return digest.hexdigest()
+        except _ArtifactVerificationError:
+            raise
+        except (OSError, ValueError) as exc:
+            raise _ArtifactVerificationError(f"could not hash artifact: {exc}") from exc
+    finally:
+        try:
+            os.close(fd)
+        except OSError as exc:
+            raise _ArtifactVerificationError(f"could not close artifact: {exc}") from exc
 
 
 def verify(events: list[object]) -> _Result:
@@ -181,7 +298,7 @@ def verify(events: list[object]) -> _Result:
         except (TypeError, ValueError) as exc:
             r.error(f"{label}: event cannot be hashed: {exc}")
             continue
-        if ev["event_hash"] != expected_hash:
+        if ev["event_hash"].lower() != expected_hash.lower():
             r.error(
                 f"{label}: event_hash mismatch — stored {ev['event_hash']!r}, "
                 f"recomputed {expected_hash!r}"
@@ -194,21 +311,19 @@ def verify(events: list[object]) -> _Result:
         if artifact_path is not None and artifact_sha256 is not None:
             p = Path(artifact_path)
             try:
-                exists = p.exists()
-                if exists:
-                    actual = hashlib.sha256(p.read_bytes()).hexdigest()
-                    if actual != artifact_sha256:
-                        r.error(
-                            f"{label}: artifact_sha256 mismatch for {artifact_path!r} — "
-                            f"stored {artifact_sha256!r}, recomputed {actual!r}"
-                        )
-                else:
-                    r.warn(
-                        f"{label}: artifact_path {artifact_path!r} not found; "
-                        "artifact hash check skipped"
+                actual = _hash_regular_artifact(p)
+                if actual.lower() != artifact_sha256.lower():
+                    r.error(
+                        f"{label}: artifact_sha256 mismatch for {artifact_path!r} — "
+                        f"stored {artifact_sha256!r}"
                     )
-            except OSError as exc:
-                r.error(f"{label}: could not read artifact_path {artifact_path!r}: {exc}")
+            except _ArtifactMissingError:
+                r.warn(
+                    f"{label}: artifact_path {artifact_path!r} not found; "
+                    "artifact hash check skipped"
+                )
+            except _ArtifactVerificationError as exc:
+                r.error(f"{label}: artifact_path {artifact_path!r} rejected: {exc}")
 
     # Stop cross-event checks if per-event errors make them unreliable
     if not r.passed:
@@ -236,9 +351,13 @@ def verify(events: list[object]) -> _Result:
         curr = events[i]
 
         # Hash chain linkage
-        if curr["previous_event_hash"] != prev["event_hash"]:
+        previous_hash = curr["previous_event_hash"]
+        if (
+            previous_hash is None
+            or previous_hash.lower() != prev["event_hash"].lower()
+        ):
             r.error(
-                f"event[{i}]: previous_event_hash {curr['previous_event_hash']!r} "
+                f"event[{i}]: previous_event_hash {previous_hash!r} "
                 f"does not match event[{i - 1}].event_hash {prev['event_hash']!r}"
             )
 
@@ -275,6 +394,10 @@ def main() -> int:
 
     try:
         events = load_events(path)
+    except json.JSONDecodeError as exc:
+        print("M3 event log: FAIL")
+        print(f"  ERROR: invalid JSON: {exc}")
+        return 1
     except Exception as exc:
         print(f"ERROR: could not load log: {exc}", file=sys.stderr)
         return 2
