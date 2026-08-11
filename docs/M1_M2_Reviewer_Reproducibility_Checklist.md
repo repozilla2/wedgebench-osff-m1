@@ -13,23 +13,29 @@ It verifies:
 3. M2 evidence validation
 4. Python contract tests
 
-This checklist does not represent OSFF Milestone 3. M3 verification logging remains future scope until publicly released.
+This checklist remains specifically for M1/M2. M3 is now complete and public
+through the separate `make m3-verify` path. M3 is not part of
+`make osff-verify`.
 
 ## Prerequisites
 
-- Docker Desktop or Docker Engine
-- Docker Compose
-- Python 3.10+
+- Git
+- Docker Desktop or Docker Engine with Docker Compose support for
+  `make osff-verify`
+- Python 3.10 or later
 - GCC or Clang
-- Go
-- pytest
+- Go 1.24 or later
+- `pytest`
+- Network access on the first required Go module or toolchain dependency run
 
 The M2 Go module uses a local replace directive. Place the upstream checkout as a
 sibling of this WedgeBench repository:
 
-    <parent>/
-      wedgebench-osff-m1/
-      go-tcg-storage/
+```text
+workspace/
+├── go-tcg-storage/
+└── wedgebench-osff-m1/
+```
 
 The sibling `go-tcg-storage` checkout must be a Git repository at:
 
@@ -43,6 +49,14 @@ The upstream repository for that checkout is:
 
     https://github.com/open-source-firmware/go-tcg-storage
 
+After the required Go modules and toolchain have been cached, the Go-dependent
+reviewer paths can be rerun with Go proxy and checksum-database access disabled:
+
+    GOPROXY=off GOSUMDB=off make m2-verify
+    GOPROXY=off GOSUMDB=off make m3-verify
+
+These cached reruns are not a claim of hermetic or fully air-gapped execution.
+
 ## One-command reviewer verification
 
 From the repository root:
@@ -54,6 +68,15 @@ From the repository root:
 For the M2 go-tcg-storage reference integration and evidence validator path:
 
     make m2-verify
+
+## Separate M3 verification
+
+M3 is public through its separate verification path:
+
+    make m3-verify
+
+This command is not invoked by `make osff-verify` and remains outside this
+checklist's M1/M2 verification scope.
 
 ## Expected success signs
 
@@ -106,6 +129,8 @@ This public M1/M2 verification path demonstrates:
 - M2 artifact validation through `tools/validate_m2_evidence.py`
 - contract-test coverage for the adapter and validator path
 
+This M1/M2 checklist and `make osff-verify` do not perform M3 verification.
+
 It does not claim:
 
 - exhaustive fuzz coverage
@@ -114,7 +139,6 @@ It does not claim:
 - formal safety proof
 - production firmware validation
 - real TCG storage device validation
-- OSFF Milestone 3 completion
 
 ## Troubleshooting
 

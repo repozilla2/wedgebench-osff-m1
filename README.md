@@ -362,7 +362,7 @@ M2 intentionally remains constrained. The goal is to prove portability of the ve
 
 ### Milestone 3 — Verification Logging & Extended Replay
 
-Status: **Release candidate for public review**
+Status: **Complete — publicly released for the bounded M3 scope**
 
 Includes:
 - verification-oriented event logging
@@ -372,6 +372,15 @@ Includes:
 
 M3 is a bounded tamper-evidence layer. It does not expand the M1 or M2 claim
 scope and is not included in `make osff-verify`.
+
+Release references:
+
+- `osff-m3-event-log-v1` — existing initial M3 implementation release
+- `osff-m3-event-log-v1.1` — designated reviewer-clarification release
+
+The `osff-m3-event-log-v1.1` tag is created only after this documentation
+change is merged and validated. This documentation change itself does not
+create or move tags.
 
 ---
 
