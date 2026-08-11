@@ -8,17 +8,31 @@ and run the public verifier.
 
 The canonical public event schema is `m3-log-v1`.
 
+M3 is complete and publicly released for its bounded event-log scope. Its
+release lineage is:
+
+- `osff-m3-event-log-v1` — existing initial M3 implementation release
+- `osff-m3-event-log-v1.1` — designated reviewer-clarification release
+
+The `osff-m3-event-log-v1.1` tag is created only after this documentation
+change is merged and validated. This documentation change itself does not
+create or move tags.
+
 ## What M3 Proves
 
 A log that passes `tools/verify_event_log.py` is internally consistent at the
 time it is checked:
 
-- every event has the required fields and uses `m3-log-v1`;
+- every event is an object with the required fields and required field types;
+- every event uses the accepted schema version, `m3-log-v1`;
+- `event_hash` and supplied `artifact_sha256` values use the required SHA-256
+  hexadecimal format;
 - each `event_hash` matches the canonical JSON content of that event;
 - each `previous_event_hash` links to the preceding event;
-- sequence numbers are contiguous and the `run_id` is consistent; and
-- when a referenced artifact is present, its current SHA-256 matches the
-  `artifact_sha256` recorded in the event.
+- sequence values are contiguous and the `run_id` is consistent; and
+- when `artifact_path` and `artifact_sha256` are both supplied and the
+  referenced artifact is present, its current SHA-256 matches the recorded
+  `artifact_sha256`.
 
 For logs produced by `tools/run_m3_demo.py`, the recorded workflow also shows
 whether the current M2 generation and validation steps succeeded. The runner
@@ -28,6 +42,18 @@ before it emits a successful generation event.
 
 These are bounded integrity checks. A passing log is not proof that an
 unobserved real-world action occurred or that the event producer is trusted.
+
+## What the Generic Verifier Does Not Enforce
+
+The current generic verifier does not fully enforce:
+
+- timestamp syntax or trusted time;
+- an event-type vocabulary;
+- the exact five-event semantic profile produced by the demo runner;
+- payload-specific schemas;
+- mandatory `run_completed` termination;
+- `artifact_path` and `artifact_sha256` pairing; or
+- workflow success.
 
 ## What M3 Does Not Prove
 
@@ -59,13 +85,14 @@ event type, payload, and `previous_event_hash`.
 
 The first event has `previous_event_hash: null`. Every later event records the
 preceding event's `event_hash`. Editing an event without recomputing its hash is
-detected. Reordering, deleting, or inserting events without rebuilding the
-affected chain is also detected.
-
-This design is tamper-evident, not tamper-proof. A party able to replace the
-whole log can recompute an unsigned chain, and a log can be deleted. M3 has no
-external signed anchor against which to distinguish such a replacement. Keep
-independent copies or digests when stronger change detection is needed.
+detected. Inserting, reordering, or deleting an interior event without
+recomputing the affected downstream hashes and sequence values is also
+detected. A party able to rewrite and recompute the chain can produce a new
+internally consistent log. Suffix truncation can leave a valid prefix that
+passes generic integrity verification. Detecting wholesale replacement or
+valid-prefix truncation requires an external retained digest, signed anchor,
+expected terminal profile, or equivalent independent expectation. The current
+verifier does not enforce a terminal anchor.
 
 ## Artifact Hash Checking
 
@@ -73,6 +100,10 @@ The `m2_evidence_generated` and `m2_evidence_validated` payloads include an
 `artifact_path` and `artifact_sha256`. When the referenced artifact is present,
 the verifier recomputes its SHA-256 and fails on a mismatch. If the artifact is
 absent, the verifier reports a warning and skips that artifact comparison.
+
+The generic verifier performs this artifact comparison only when both
+`artifact_path` and `artifact_sha256` are supplied. It does not require the two
+fields to be paired.
 
 Accordingly, artifact modification is checked only when the referenced
 artifact is present at verification time. The event chain still verifies the
@@ -124,9 +155,44 @@ generation, M2 artifact validation, and event-log plumbing; it does not run the
 Python test suite inside the event chain. This keeps test execution from being
 misrepresented as a chained workflow event.
 
+This exact five-event order is the demo runner's profile. It is not a semantic
+profile enforced by the generic verifier.
+
 `make m3-verify` runs tests separately, after demo generation and standalone
 log verification. Those tests are acceptance checks outside the five-event
 chain.
+
+## Reviewer Prerequisites
+
+Use this exact sibling-checkout layout:
+
+```text
+workspace/
+├── go-tcg-storage/
+└── wedgebench-osff-m1/
+```
+
+The reviewer environment requires:
+
+- Git;
+- Python 3.10 or later;
+- `pytest`;
+- Go 1.24 or later;
+- Docker with Compose support for `make osff-verify`;
+- network access on the first required Go module or toolchain dependency run;
+  and
+- a clean sibling `go-tcg-storage` Git checkout whose origin is
+  `https://github.com/open-source-firmware/go-tcg-storage` and whose HEAD is
+  `f99905c99780c82856226b20b59fb4863d83ae0d`.
+
+After the required Go modules and toolchain have been cached, the M3 workflow
+can be rerun with Go proxy and checksum-database access disabled:
+
+```bash
+GOPROXY=off GOSUMDB=off make m3-verify
+```
+
+This cached rerun is not a claim of hermetic or fully air-gapped execution.
 
 ## Generate and Verify
 
@@ -151,9 +217,8 @@ exits `1` for workflow or integrity failure.
 The standalone verifier exits `0` for PASS, `1` for integrity errors, and `2`
 for usage or file errors.
 
-“M3 event log: PASS” means log integrity passed, not necessarily that the
-recorded workflow succeeded. Review `run_completed.payload.success` and the
-runner exit code to determine the workflow outcome.
+“M3 event log: PASS” means integrity checks passed. Workflow outcome is
+determined by `run_completed.payload.success` and the runner exit code.
 
 ## Reviewer Verification
 
