@@ -11,12 +11,15 @@ The canonical public event schema is `m3-log-v1`.
 M3 is complete and publicly released for its bounded event-log scope. Its
 release lineage is:
 
-- `osff-m3-event-log-v1` — existing initial M3 implementation release
-- `osff-m3-event-log-v1.1` — designated reviewer-clarification release
+- `osff-m3-event-log-v1` — initial implementation release
+- `osff-m3-event-log-v1.1` — reviewer prerequisites and claim-boundary release
+- `osff-m3-event-log-v1.2` — designated verifier resource-safety release after
+  this pull request is merged and validated
 
-The `osff-m3-event-log-v1.1` tag is created only after this documentation
-change is merged and validated. This documentation change itself does not
-create or move tags.
+The `osff-m3-event-log-v1` and `osff-m3-event-log-v1.1` releases remain
+immutable. This implementation session does not create, move, replace, or
+delete any tag. Creating `osff-m3-event-log-v1.2` requires separate release
+authorization after merge and validation.
 
 ## What M3 Proves
 
@@ -31,8 +34,8 @@ time it is checked:
 - each `previous_event_hash` links to the preceding event;
 - sequence values are contiguous and the `run_id` is consistent; and
 - when `artifact_path` and `artifact_sha256` are both supplied and the
-  referenced artifact is present, its current SHA-256 matches the recorded
-  `artifact_sha256`.
+  referenced path is a supported regular, non-symlink file, its streamed
+  SHA-256 matches the recorded `artifact_sha256`.
 
 For logs produced by `tools/run_m3_demo.py`, the recorded workflow also shows
 whether the current M2 generation and validation steps succeeded. The runner
@@ -83,6 +86,13 @@ Canonical JSON sorts object keys, uses compact separators, and encodes as
 UTF-8. The hash therefore covers the schema, run ID, sequence, timestamp,
 event type, payload, and `previous_event_hash`.
 
+Canonical hash generation emits lowercase hexadecimal. The verifier retains
+the 64-hex-character format requirement but accepts uppercase or mixed-case
+hexadecimal representations when comparing `event_hash`,
+`previous_event_hash`, and `artifact_sha256`. The exact representation of
+`previous_event_hash` remains part of the canonical event content, so changing
+its letter case requires recomputing that event's `event_hash`.
+
 The first event has `previous_event_hash: null`. Every later event records the
 preceding event's `event_hash`. Editing an event without recomputing its hash is
 detected. Inserting, reordering, or deleting an interior event without
@@ -97,9 +107,21 @@ verifier does not enforce a terminal anchor.
 ## Artifact Hash Checking
 
 The `m2_evidence_generated` and `m2_evidence_validated` payloads include an
-`artifact_path` and `artifact_sha256`. When the referenced artifact is present,
-the verifier recomputes its SHA-256 and fails on a mismatch. If the artifact is
-absent, the verifier reports a warning and skips that artifact comparison.
+`artifact_path` and `artifact_sha256`. When both fields are supplied, the
+verifier inspects the final supplied path without resolving it. It hashes only
+a regular, non-symlink file no larger than the inclusive 64 MiB limit
+(67,108,864 bytes). Relative and absolute regular-file paths remain supported.
+
+Artifacts are read through a descriptor in fixed-size chunks. Where the
+platform provides them, no-follow and nonblocking descriptor flags are used.
+The verifier checks that the opened descriptor identifies the same regular
+filesystem object that was inspected and rejects an initial, observed,
+streamed, or final size above the limit.
+
+A genuinely missing path produces a warning and skips the artifact comparison.
+A present symlink, directory, FIFO, socket, device, other non-regular file,
+oversized file, or filesystem error produces FAIL. Artifact mismatch output
+does not disclose the verifier's recomputed digest.
 
 The generic verifier performs this artifact comparison only when both
 `artifact_path` and `artifact_sha256` are supplied. It does not require the two
@@ -109,6 +131,13 @@ Accordingly, artifact modification is checked only when the referenced
 artifact is present at verification time. The event chain still verifies the
 recorded digest as event content, but it cannot compare that digest with a
 missing file.
+
+These checks do not confine artifacts to the repository, create an atomic
+filesystem snapshot, prevent every path or content race, sandbox arbitrary
+paths, or impose timeouts on regular files supplied by network or FUSE
+filesystems. The verifier may hash any readable relative or absolute regular
+file within the size limit. This is a bounded correction to the reproduced
+artifact-type and artifact-byte risks, not a claim of general resource safety.
 
 ## Time Behavior
 
@@ -214,8 +243,10 @@ The runner exits `0` only when current-run M2 generation succeeds, the expected
 artifact is produced and validates, and the resulting log self-verifies. It
 exits `1` for workflow or integrity failure.
 
-The standalone verifier exits `0` for PASS, `1` for integrity errors, and `2`
-for usage or file errors.
+The standalone verifier exits `0` for PASS. It exits `1` for integrity errors,
+including invalid JSON syntax; invalid JSON prints `M3 event log: FAIL` and a
+parse diagnostic without a traceback. Missing or unreadable log files and
+incorrect CLI usage exit `2`.
 
 “M3 event log: PASS” means integrity checks passed. Workflow outcome is
 determined by `run_completed.payload.success` and the runner exit code.

@@ -375,12 +375,14 @@ scope and is not included in `make osff-verify`.
 
 Release references:
 
-- `osff-m3-event-log-v1` — existing initial M3 implementation release
-- `osff-m3-event-log-v1.1` — designated reviewer-clarification release
+- `osff-m3-event-log-v1` — initial implementation release
+- `osff-m3-event-log-v1.1` — reviewer prerequisites and claim-boundary release
+- `osff-m3-event-log-v1.2` — designated verifier resource-safety release after
+  this pull request is merged and validated
 
-The `osff-m3-event-log-v1.1` tag is created only after this documentation
-change is merged and validated. This documentation change itself does not
-create or move tags.
+This implementation session does not create, move, replace, or delete any tag.
+Creating `osff-m3-event-log-v1.2` requires separate release authorization after
+merge and validation.
 
 ---
 

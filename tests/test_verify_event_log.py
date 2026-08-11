@@ -4,6 +4,7 @@ Tests for tools/verify_event_log.py — M3 JSONL event log verifier.
 import copy
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ from tools.event_log import (
     create_event,
     hash_event,
 )
+from tools import verify_event_log as verifier
 from tools.verify_event_log import verify
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +54,17 @@ def _chain(n: int = 3, run_id: str = "test-run") -> list[dict]:
 def _write_log(path: Path, events: list[dict]) -> None:
     for ev in events:
         append_event(path, ev)
+
+
+def _artifact_event(path: str | Path, digest: str) -> dict:
+    return create_event(
+        run_id="artifact-test",
+        sequence=0,
+        event_type="artifact",
+        payload={"artifact_path": str(path), "artifact_sha256": digest},
+        previous_event_hash=None,
+        timestamp_utc=_TS[0],
+    )
 
 
 # ── Valid log ─────────────────────────────────────────────────────────────────
@@ -395,6 +408,214 @@ def test_missing_artifact_file_produces_warning(tmp_path):
     assert any("not found" in w or "skipped" in w for w in r.warnings)
 
 
+def test_relative_regular_artifact_below_limit_passes(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    artifact = Path("relative.bin")
+    content = b"relative artifact"
+    artifact.write_bytes(content)
+
+    r = verify([_artifact_event(artifact, hashlib.sha256(content).hexdigest())])
+
+    assert r.passed, r.report()
+
+
+def test_absolute_regular_artifact_below_limit_passes(tmp_path):
+    artifact = (tmp_path / "absolute.bin").absolute()
+    content = b"absolute artifact"
+    artifact.write_bytes(content)
+
+    r = verify([_artifact_event(artifact, hashlib.sha256(content).hexdigest())])
+
+    assert artifact.is_absolute()
+    assert r.passed, r.report()
+
+
+def test_directory_artifact_fails_cleanly(tmp_path):
+    artifact = tmp_path / "artifact-directory"
+    artifact.mkdir()
+
+    r = verify([_artifact_event(artifact, "aa" * 32)])
+
+    assert not r.passed
+    assert "not a regular file" in r.report()
+    assert "Traceback" not in r.report()
+
+
+def test_final_symlink_fails_without_reading_target(tmp_path, monkeypatch):
+    target = tmp_path / "target.bin"
+    content = b"must not be read"
+    target.write_bytes(content)
+    target_digest = hashlib.sha256(content).hexdigest()
+    artifact = tmp_path / "artifact-link"
+    try:
+        artifact.symlink_to(target)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"symlinks are unavailable: {exc}")
+
+    def unexpected_open(*args, **kwargs):
+        raise AssertionError("symlink target must not be opened")
+
+    monkeypatch.setattr(verifier.os, "open", unexpected_open)
+    r = verify([_artifact_event(artifact, target_digest)])
+
+    assert not r.passed
+    assert "symlink" in r.report()
+    assert "Traceback" not in r.report()
+
+
+def test_broken_final_symlink_is_rejected_not_treated_as_missing(tmp_path):
+    artifact = tmp_path / "broken-link"
+    try:
+        artifact.symlink_to(tmp_path / "missing-target.bin")
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"symlinks are unavailable: {exc}")
+
+    r = verify([_artifact_event(artifact, "aa" * 32)])
+
+    assert not r.passed
+    assert "symlink" in r.report()
+    assert not r.warnings
+
+
+def test_oversized_sparse_regular_artifact_fails(tmp_path):
+    artifact = tmp_path / "oversized.bin"
+    with artifact.open("wb") as fh:
+        fh.truncate(verifier.MAX_ARTIFACT_SIZE_BYTES + 1)
+
+    r = verify([_artifact_event(artifact, "aa" * 32)])
+
+    assert not r.passed
+    assert "exceeds inclusive" in r.report()
+
+
+def test_exact_limit_regular_artifact_passes_with_reduced_limit(
+    tmp_path, monkeypatch
+):
+    limit = 8
+    content = b"12345678"
+    artifact = tmp_path / "exact-limit.bin"
+    artifact.write_bytes(content)
+    monkeypatch.setattr(verifier, "MAX_ARTIFACT_SIZE_BYTES", limit)
+    monkeypatch.setattr(verifier, "ARTIFACT_HASH_CHUNK_SIZE_BYTES", 3)
+
+    r = verify([_artifact_event(artifact, hashlib.sha256(content).hexdigest())])
+
+    assert r.passed, r.report()
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="FIFO support unavailable")
+def test_fifo_artifact_fails_without_blocking(tmp_path):
+    artifact = tmp_path / "artifact.fifo"
+    os.mkfifo(artifact)
+    log = tmp_path / "fifo.jsonl"
+    _write_log(log, [_artifact_event(artifact, "aa" * 32)])
+
+    result = subprocess.run(
+        [sys.executable, "tools/verify_event_log.py", str(log)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+
+    assert result.returncode == 1
+    assert "M3 event log: FAIL" in result.stdout
+    assert "not a regular file" in result.stdout
+    assert "Traceback" not in result.stdout + result.stderr
+
+
+def test_artifact_growth_beyond_limit_during_streaming_fails(
+    tmp_path, monkeypatch
+):
+    artifact = tmp_path / "growing.bin"
+    initial_content = b"1234"
+    artifact.write_bytes(initial_content)
+    monkeypatch.setattr(verifier, "MAX_ARTIFACT_SIZE_BYTES", 8)
+    monkeypatch.setattr(verifier, "ARTIFACT_HASH_CHUNK_SIZE_BYTES", 4)
+    real_read = os.read
+    read_count = 0
+    observed_bytes = 0
+
+    def read_then_grow(fd, size):
+        nonlocal read_count, observed_bytes
+        chunk = real_read(fd, size)
+        read_count += 1
+        observed_bytes += len(chunk)
+        if read_count == 1:
+            with artifact.open("ab") as fh:
+                fh.write(b"56789ABC")
+        return chunk
+
+    monkeypatch.setattr(verifier.os, "read", read_then_grow)
+    r = verify(
+        [_artifact_event(artifact, hashlib.sha256(initial_content).hexdigest())]
+    )
+
+    assert not r.passed
+    assert "exceeds inclusive" in r.report()
+    assert observed_bytes == verifier.MAX_ARTIFACT_SIZE_BYTES + 1
+
+
+def test_artifact_filesystem_error_fails_without_traceback(tmp_path, monkeypatch):
+    artifact = tmp_path / "unreadable.bin"
+    content = b"content"
+    artifact.write_bytes(content)
+
+    def denied_open(*args, **kwargs):
+        raise PermissionError("simulated filesystem denial")
+
+    monkeypatch.setattr(verifier.os, "open", denied_open)
+    r = verify([_artifact_event(artifact, hashlib.sha256(content).hexdigest())])
+
+    assert not r.passed
+    assert "simulated filesystem denial" in r.report()
+    assert "Traceback" not in r.report()
+
+
+def test_artifact_mismatch_does_not_expose_recomputed_digest(tmp_path):
+    artifact = tmp_path / "external.bin"
+    content = b"external file content"
+    artifact.write_bytes(content)
+    recomputed = hashlib.sha256(content).hexdigest()
+
+    r = verify([_artifact_event(artifact, "de" * 32)])
+
+    assert not r.passed
+    assert "artifact_sha256 mismatch" in r.report()
+    assert recomputed not in r.report()
+
+
+def test_correct_uppercase_artifact_sha256_passes(tmp_path):
+    artifact = tmp_path / "uppercase.bin"
+    content = b"uppercase artifact digest"
+    artifact.write_bytes(content)
+    uppercase = hashlib.sha256(content).hexdigest().upper()
+
+    r = verify([_artifact_event(artifact, uppercase)])
+
+    assert r.passed, r.report()
+
+
+def test_correct_uppercase_event_hash_passes():
+    event = _chain(1)[0]
+    event["event_hash"] = event["event_hash"].upper()
+
+    assert verify([event]).passed
+
+
+def test_mixed_case_previous_event_hash_linkage_passes_after_resealing():
+    events = _chain(2)
+    parent_hash = events[0]["event_hash"]
+    mixed_case = parent_hash[:32].upper() + parent_hash[32:].lower()
+    assert mixed_case != mixed_case.lower()
+    assert mixed_case != mixed_case.upper()
+    events[1] = {**events[1], "previous_event_hash": mixed_case}
+    body = {k: v for k, v in events[1].items() if k != "event_hash"}
+    events[1] = {**events[1], "event_hash": hash_event(body)}
+
+    assert verify(events).passed
+
+
 # ── JSONL roundtrip via CLI ───────────────────────────────────────────────────
 
 def test_cli_passes_on_valid_log(tmp_path):
@@ -441,6 +662,24 @@ def test_cli_exits_1_without_traceback_on_malformed_log(tmp_path):
 
     assert result.returncode == 1
     assert "M3 event log: FAIL" in result.stdout
+    assert "Traceback" not in result.stdout + result.stderr
+
+
+def test_cli_exits_1_on_invalid_json_syntax(tmp_path):
+    log = tmp_path / "invalid-json.jsonl"
+    log.write_text('{"schema_version":\n')
+
+    result = subprocess.run(
+        [sys.executable, "tools/verify_event_log.py", str(log)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert "M3 event log: FAIL" in result.stdout
+    assert "invalid JSON" in result.stdout
+    assert "line" in result.stdout and "column" in result.stdout
     assert "Traceback" not in result.stdout + result.stderr
 
 
