@@ -408,4 +408,4 @@ keith@kaimeragroup.com
 
 ## Case Studies
 
-- [Breaking the Multi-LLM Red-Team Loop with WedgeBench (Kaimera SpecGuard SaaS Case Study)](docs/case-studies/specguard-saas-boundary-conformance.md)
+- [Applying WedgeBench's firmware verification method to SpecGuard](docs/case-studies/specguard-saas-boundary-conformance.md)

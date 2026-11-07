@@ -1,77 +1,47 @@
-# Case Study: Breaking the Multi-LLM Red-Team Loop with WedgeBench
+# Applying WedgeBench's firmware verification method to SpecGuard
 
-**Project:** Kaimera SpecGuard (`kaimera-group/autonomous-revenue-engine`, commit `296db2a`)  
-**Domain:** Cloud-Native B2B SaaS — Multi-Runtime YAML 1.2 AST Remediation & Stateless Payment Entitlement Verification  
-**Methodology:** WedgeBench Differential Parser Conformance & Negative-Space Boundary Fuzzing  
+Repeated review of Kaimera's SpecGuard tool uncovered related defects. A Docker Compose image update could change text that only looked like an image declaration. Missing fields in a simulated payment response raised a different question about when to unlock paid output. After eight pull requests, Kaimera adapted the verification method it had developed for the OSFF-supported WedgeBench project. SpecGuard implements its own test harness.
 
----
+The initial case below describes SpecGuard revision `296db2a1fe194b845abddb0826f7290521eeb029`. Kaimera conducted the source review and follow-up local checks. The dated PR #63 section records the later revision separately.
 
-## 1. Executive Summary
+## What the tests measure
 
-While hardening **Kaimera SpecGuard**—a deterministic B2B Docker Compose supply-chain auditor and stateless entitlement engine—an iterative red-team audit across multiple frontier LLMs (ChatGPT and Claude) spanned eight sequential pull requests (PRs #54–#61). Each time a patch closed a reported vulnerability, the external auditor synthesized a new YAML 1.2 grammar corner case or a truncated upstream Stripe API fixture (`2025-03-31.basil`) that bypassed the point fix.
+At SpecGuard commit `296db2a`, two test functions exercise 38 hand-selected cases.
 
-Applying the **WedgeBench** parser-boundary conformance methodology in PR #62 (`296db2a`) terminated this reactive cycle. By replacing ad-hoc regression tests with a **three-way differential AST oracle (`PyYAML` ↔ Python ↔ Node.js)** and a **systematic negative-space API graph fuzzer**, WedgeBench verified 38 adversarial sub-vectors locally in 5.50 seconds while reducing iterative cloud deployment credit consumption to **0 credits**.
+| Case set | Check |
+| --- | --- |
+| 20 Compose inputs | Compare the Python and Node implementations' original and remediated risk scores, grade, and number of findings. For inputs Python accepts, use PyYAML to compare the values of existing service fields other than `image` before and after Python remediation. |
+| 18 mutations of a simulated Stripe payment flow | Remove or alter selected evidence in an otherwise working payment fixture. Check that the Python verifier rejects the key, the Node claim handler denies or defers the claim, and the Node audit handler keeps paid output locked. |
 
----
+Kaimera reported 68 tests passing in 5.50 seconds in its local full-suite run, with zero Netlify deployment credits used during that run. Kaimera's 5 November review record describes a subsequent local rerun of the two conformance functions and a separate check in which the unmodified payment fixture unlocked access on the expected paths. The GitHub Actions quality run for that revision stopped at the workflow lint step because the runner lacked `actionlint`.
 
-## 2. The Problem: Why Traditional Unit Tests Failed Against an Adversarial Reviewer
+## What a follow-up check found
 
-Standard unit test suites validate *intended inputs* and *known regression fixtures*. An adversarial reviewer, by contrast, searches the **negative space** between a specification and its implementation. Across PRs #54–#61, two structural gaps repeatedly produced new findings:
+A valid Compose input used a YAML anchor to share a mapping with a service's environment. One environment variable happened to be named `image`. At the reviewed revision, the Node audit handler rewrote that variable's value. Python preserved the original input and classified the proposed change as invalid. The original 20 inputs omitted this pattern. Comparing the returned manifests on the additional input exposed it.
 
-### A. Cross-Runtime Line-Scanner Drift (The YAML 1.2 Grammar Wedge)
-SpecGuard evaluates Docker Compose manifests in both Python (`src/compose_remediator.py`, backing the CLI and Model Context Protocol server) and Node.js (`netlify/functions/audit.js`, backing the serverless web API). Because both implementations initially relied on line-by-line regular expressions and flat boolean state flags rather than a quote-aware tree model, fixing one YAML construct left adjacent grammar rules exposed:
+A stronger regression check would include that input, compare the complete findings and the returned YAML from both runtimes, and verify that only the intended service image changes. An independent reviewer could then replay the original failure and the corrected behavior against pinned revisions.
 
-* **Block Scalar Indicators:** Patching basic block scalars (`command: |`) missed indentation and chomping indicators (`command: |2`, `|-`).
-* **Doubled Single-Quote Escapes:** Patching quoted multiline strings missed YAML 1.2 doubled single-quote escapes (`'it''s\n image: postgres:latest\n done'`). The quote detector treated the first apostrophe in `''` as a closing quote, causing the remediator to rewrite `postgres:latest` to `postgres:16` inside a shell command.
-* **Premature Comment Stripping:** Stripping `#` comments before quote tokenization caused `command: "echo # literal"` to truncate the current line and skip subsequent unhardened services in the same file.
-* **YAML Merge Key (`<<: *base`) Override Precedence:** Copying boolean control flags from an anchor failed when a service inherited controls via `<<: *base` and then explicitly overrode them with `restart: 'no'` or replaced `deploy:` with `{ replicas: 1 }`.
+## Follow-up on 6 November 2026 — PR #63
 
-### B. Permissive Deserialization at the Payment Trust Boundary (The `2025-03-31.basil` API Wedge)
-SpecGuard's stateless HMAC-SHA256 license verifier queries Stripe (`2025-03-31.basil`) to confirm that an entitlement's underlying subscription, invoice, payment intent, and charge remain active and unrefunded. Because the verifier used defensive fallback defaults (`status || "succeeded"`, `currency || "usd"`, optional `if (price)` checks, and a branch that authorized `PaymentIntent` objects lacking a charge reference), the external reviewer was able to craft stripped mock responses (`{"id": "pi_good"}`, `{"id": "ch_good"}`, or a `SubscriptionItem` with its `price` object deleted) that failed open and unlocked paid output.
+SpecGuard PR #63 merged as revision `4fe668cb20e5d165043a100d1e5f153861cb4648`. Source review and the successful main-branch GitHub Actions run establish the following coverage at that revision. The shared-anchor environment case and a plain-scalar apostrophe case are now included in the Compose corpus. [PR #63](https://github.com/kaimera-group/autonomous-revenue-engine/pull/63)
 
----
+| Case set | Check at `4fe668c` |
+| --- | --- |
+| 22 Compose inputs | Require authenticated Node access, compare Python and Node risk scores, grade, findings count and exact returned YAML. For inputs Python accepts, use PyYAML to compare existing non-`image` service values against both Python and paid Node output. |
+| 21 mutations of a simulated Stripe payment flow | Apply specified field deletions and value changes to a fixed payment fixture. Check rejection by the Python verifier, denial or deferral by the Node claim handler, and locked output from the Node audit handler. |
 
-## 3. How WedgeBench Solved the Problem
+These 43 fixture cases run inside two conformance test functions. Separate Compose regressions assert the expected preserved environment-anchor output and the intended service-image update in the apostrophe example. The findings comparison in the conformance test still checks counts. Complete finding-content equivalence remains a candidate requirement. [Conformance tests](https://github.com/kaimera-group/autonomous-revenue-engine/blob/4fe668cb20e5d165043a100d1e5f153861cb4648/tests/test_wedgebench_conformance.py) · [Compose regressions](https://github.com/kaimera-group/autonomous-revenue-engine/blob/4fe668cb20e5d165043a100d1e5f153861cb4648/tests/test_compose_remediator.py)
 
-Originally developed to expose parser-boundary differentials in embedded firmware (presented at OSFC 2026), **WedgeBench** enforces a strict engineering invariant: *never trust a hand-rolled parser or trust-boundary validator unless it is continuously fuzz-tested against a canonical AST oracle and systematic field-deletion mutations.*
+The main-branch Quality Gate recorded **69 tests passed in 10.86 seconds** with Python 3.12.16 and Node.js 22.23.4. Workflow lint, formatting and strict type checks also passed. The 6.05-second local timing is attributed to the development update supplied by Kaimera. PR #63 reports zero Netlify CLI or build invocations for its implementation session. [Verified CI run](https://github.com/kaimera-group/autonomous-revenue-engine/actions/runs/42275592886)
 
-In PR #62 (`296db2a`), we embedded a WedgeBench conformance harness (`tests/test_wedgebench_conformance.py`) directly into SpecGuard's deterministic quality gate (`make quality`):
+The Compose corpus is batched into one Node child process. The separate Netlify-function tests assign per-process `TMPDIR` values and exercise valid payment controls, malformed objects and a refunded charge on a second invoice-payment page. The 21-mutation conformance fixture uses an inline payment list and object-ID dispatch. The tests communicate with loopback HTTP mocks, and the CI setup downloads tools and dependencies. [Netlify-function tests](https://github.com/kaimera-group/autonomous-revenue-engine/blob/4fe668cb20e5d165043a100d1e5f153861cb4648/tests/test_netlify_functions.py) · [CI workflow](https://github.com/kaimera-group/autonomous-revenue-engine/blob/4fe668cb20e5d165043a100d1e5f153861cb4648/.github/workflows/quality.yml)
 
-### 1. Three-Way Differential AST Oracle (`PyYAML` ↔ Python Engine ↔ Node.js Engine)
-* **Cross-Runtime Equivalence:** WedgeBench feeds a 20-vector corpus of adversarial YAML 1.2 constructs (doubled `''` escapes, `#` inside double quotes, `|2-` chomped block scalars, `<<: *base` merges with negative overrides, `${VAR:-default}` interpolations, unquoted `: ` plain scalar continuations, flow `{}` mappings, and nested duplicate keys) into both the Python engine and an isolated Node.js subprocess, asserting 100% parity on `original_risk_score`, `remediated_risk_score`, `grade`, and `findings`.
-* **Non-Target Semantic Invariance:** For every accepted manifest, WedgeBench parses both the original YAML and the remediated YAML through a canonical YAML 1.2 parser (`yaml.safe_load`) and enforces the invariant:
+These observations support a broader internal method-transfer case and a concrete regression response. Independent replay, broader target portability, required-case accounting and bounded execution remain subjects for the Phase 3 requirements. The SpecGuard source and CI links require access to its private repository.
 
-    For every service S and every key K != "image":
-        AST_remediated[S][K] == AST_original[S][K]
+## What carried over from firmware
 
-  If a line editor ever mutates a `command:`, `entrypoint:`, or `environment:` value that happens to contain `image: postgres:latest`, the AST diff detects the semantic drift immediately and fails closed.
+The same team used a fixed set of inputs, specified the behavior each should preserve, and made the observations repeatable in another project. SpecGuard supplied its own fixtures, payment simulator and runtime drivers. This case documents internal reuse of the method. Further validation requires an independently reproduced integration, a documented handoff and repeated external use.
 
-### 2. Systematic Field-Deletion & Negative-Space Boundary Fuzzing
-* Instead of testing only well-formed Stripe mocks, WedgeBench starts from a valid 5-node `2025-03-31.basil` entitlement graph (`CheckoutSession` -> `Subscription` -> `SubscriptionItem.price` -> `Invoice` -> paginated `InvoicePayment` -> `PaymentIntent` -> `Charge`) and executes 18 targeted field deletions and type corruptions:
-  * `missing_price_obj`, `missing_price_id`, `missing_price_currency`, `non_usd_price`, `missing_unit_amount`, `low_unit_amount`, `missing_recurring`, `yearly_interval`
-  * `missing_latest_invoice`, `unpaid_invoice`, `partial_invoice_refund`
-  * `bare_pi_id_only` (`{"id": "pi_wb_1"}`), `pi_without_charge_ref`
-  * `bare_charge_id_only` (`{"id": "ch_wb_1"}`), `charge_missing_paid_bool`, `charge_missing_status`, `charge_missing_refunded_bool`, `charge_partial_refund`
-* Across every mutation, WedgeBench asserts that Python (`verify_signed_license_key`), Node.js `claim.js`, and Node.js `audit.js` all fail closed (`False`, `HTTP 402`, or retryable `HTTP 503`).
+The public firmware workflow and its replay instructions are available in the [WedgeBench repository](../../README.md).
 
----
-
-## 4. Adaptations Made to WedgeBench for Cloud-Native SaaS
-
-To extend WedgeBench from embedded firmware parsers to a multi-runtime Python + Node.js cloud application, we introduced three adaptations:
-
-1. **Subprocess Batching for Sub-Second Multi-Runtime Fuzzing:** Spawning a fresh Node.js VM per YAML vector adds seconds of process startup overhead. We adapted the WedgeBench runner to serialize the entire 20-vector YAML corpus into a single batched `Promise.all(...)` call inside an isolated `TMPDIR` Node.js child process, completing all 20 cross-runtime differential comparisons in ~0.4 seconds.
-2. **Runtime Self-Check Shim Inside the Production Engine:** Rather than keeping WedgeBench purely in the test suite, we promoted its AST semantic invariant check into `src/compose_remediator.py` (`remediate_compose_manifest`). Every production remediation in Python validates its own generated YAML against `yaml.safe_load` before returning, guaranteeing that no non-`image` property can ever be altered in production.
-3. **Relational DAG Mutation for REST API Boundaries:** Traditional fuzzers mutate flat byte streams or single JSON payloads. Because Stripe's `2025-03-31.basil` API distributes entitlement state across five linked REST resources (including paginated `/v1/invoice_payments`), we extended WedgeBench's mutator to operate on an in-memory relational state graph (`active_state`) served over an ephemeral loopback HTTP server (`127.0.0.1`), enabling deterministic injection of multi-page refund states and stripped JSON objects.
-
----
-
-## 5. Quantifiable Impact
-
-| Metric | Pre-WedgeBench (PRs #54–#61) | With WedgeBench (PR #62, `296db2a`) |
-| :--- | :--- | :--- |
-| **Verification Mode** | Reactive point-fix unit tests after external LLM review | Proactive differential AST & negative-space boundary fuzzing |
-| **Adversarial Vectors Verified per Run** | 7 static regression fixtures | **38 differential YAML & API mutation vectors** (68 total tests) |
-| **Full Suite Execution Time** | 3.51s | **5.50s** (batched subprocess execution) |
-| **Cloud Deploy Credits Used in Iteration** | High (repeated preview/prod deploys) | **0 credits** (100% local loopback & subprocess isolation) |
-| **Non-Image YAML Mutation Risk** | Vulnerable to `''` and `#`-in-quotes edge cases | **0%** (guarded by canonical AST equivalence check) |
+The resulting implementation backlog is recorded in [Phase 3 conformance requirements](../Phase_3_Conformance_Requirements.md).
