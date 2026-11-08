@@ -32,9 +32,9 @@ The candidate profile records the five dimensions defined in the roadmap.
 
 A release decision identifies its policy, evaluated claims and unevaluated dimensions. Lifecycle claims identify clean-start acceptance, operation after an explicit reset, or recovery in the same running instance. The adapter must collect the observations required by the selected lifecycle claim.
 
-## Work allowance and handoff
+## Review and handoff
 
-Use the roadmap's initial 16-founder-hour cap for contract extraction, with external-review costs explicitly scoped. At the cap, record the candidate profile, completed criteria, open requirements and the estimate for the next decision.
+Complete contract extraction against the selected acceptance criteria, with external-review costs explicitly scoped. Record the candidate profile, execution evidence, completed criteria, open requirements and the remaining work at each review. Progress to the next decision when its evidence and review requirements are met.
 
 The handoff exercise requires an engineer outside the implementation effort to make a meaningful integration change using the published contract and tests. Record the selected revision, task, documentation used, time, assistance and result. Address material handoff failures before promoting the candidate to a stable contract.
 

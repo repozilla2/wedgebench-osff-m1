@@ -58,6 +58,10 @@ under `examples/m3/` are illustrative reviewer fixtures, not canonical
 execution evidence. M3 does not add signing, trusted timestamps, identity or
 provenance attestation, formal proof, or physical-device validation.
 
+A separate candidate workflow profile checks the completeness and consistency
+of the five recorded M3 demo stages and reports skipped tests explicitly.
+[M3 Workflow Profile Guide](docs/M3_Workflow_Profile_Guide.md)
+
 ### Recommended (Docker — fully reproducible)
 
 ```bash
