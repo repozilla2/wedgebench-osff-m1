@@ -1,0 +1,97 @@
+name: Validate pinned WedgeBench M1 in Docker
+on:
+  push:
+    branches: [validation/docker-m1-e236435]
+    paths: [.github/workflows/wedgebench-docker-validation.yml]
+permissions:
+  contents: read
+jobs:
+  docker-m1:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Build and verify the pinned Docker Compose service
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init source
+          git -C source fetch --depth 1 https://github.com/repozilla2/wedgebench-osff-m1.git e236435d367e9a21ee4bc954615e57ef9581f30a
+          cat > run_wedgebench_docker.sh <<'RUNNER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          
+          revision=e236435d367e9a21ee4bc954615e57ef9581f30a
+          if [[ $# != 2 ]]; then
+            printf 'Usage: bash %s WEDGEBENCH_REPO NEW_OUTPUT_DIRECTORY\n' "$0" >&2
+            exit 2
+          fi
+          repo=$1
+          output=$2
+          git -C "$repo" cat-file -e "$revision^{commit}"
+          docker version --format '{{.Server.Version}}' >/dev/null
+          docker compose version >/dev/null
+          command -v python3 >/dev/null
+          
+          # A new directory keeps generated evidence separate from any checked-in files.
+          mkdir "$output"
+          output=$(cd "$output" && pwd)
+          staging=$(mktemp -d)
+          trap 'rm -rf "$staging"' EXIT
+          git -C "$repo" archive "$revision" | tar -x -C "$staging"
+          mkdir "$output/evidence"
+          cat > "$staging/validation.compose.yml" <<'EOF'
+          services:
+            sentinel-m1:
+              build:
+                args:
+                  GIT_SHA: "${WB_SOURCE_COMMIT:?Missing source commit}"
+              volumes:
+                - type: bind
+                  source: "${WB_EVIDENCE_DIR:?Missing evidence directory}"
+                  target: /sentinel/evidence
+          EOF
+          
+          {
+            printf 'Source commit: %s\n' "$revision"
+            docker version
+            docker compose version
+          } > "$output/environment.txt"
+          
+          (
+            cd "$staging"
+            export WB_SOURCE_COMMIT="$revision" WB_EVIDENCE_DIR="$output/evidence"
+            docker compose -f docker-compose.yml -f validation.compose.yml config \
+              > "$output/compose.resolved.yml"
+            docker compose -f docker-compose.yml -f validation.compose.yml run --build --rm sentinel-m1
+          ) 2>&1 | tee "$output/container.log"
+          
+          python3 - "$revision" "$output/evidence" "$staging/tools/validate_evidence.py" <<'PY' | tee "$output/verification.txt"
+          import hashlib
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+          
+          revision, evidence_dir, validator = sys.argv[1:]
+          files = list(Path(evidence_dir).glob("EP-*-m1.json"))
+          if len(files) != 1:
+              raise SystemExit(f"Expected one fresh M1 artifact, found {len(files)}.")
+          artifact = files[0]
+          subprocess.run([sys.executable, validator, str(artifact)], check=True)
+          raw = artifact.read_bytes()
+          evidence = json.loads(raw)
+          if set(evidence) != {"safe", "vuln"}:
+              raise SystemExit("Expected safe and vulnerable parser records.")
+          for parser, record in evidence.items():
+              if record["firmware_build_id"] != revision:
+                  raise SystemExit(f"{parser} evidence did not record the pinned revision.")
+              print(f"{parser}: {record['trial_count']} trials, build ID matches")
+          print(f"Evidence SHA-256: {hashlib.sha256(raw).hexdigest()}")
+          print("PASS: Docker Compose M1 evidence")
+          PY
+          RUNNER
+          bash run_wedgebench_docker.sh source docker-evidence
+          docker compose version
+          cat docker-evidence/environment.txt docker-evidence/compose.resolved.yml
+          echo 'Fresh evidence JSON follows'
+          cat docker-evidence/evidence/EP-*-m1.json
