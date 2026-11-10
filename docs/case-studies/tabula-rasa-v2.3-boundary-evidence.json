@@ -1,0 +1,312 @@
+{
+  "schema": "tabula-rasa-case-study-evidence-v1",
+  "date": "2026-11-10",
+  "description": "Publisher-reported development evidence, not a WedgeBench firmware artifact, certification, third-party replay or experiment result.",
+  "development_receipt": {
+    "kind": "SYNTHETIC_DEVELOPMENT_ONLY",
+    "python": "3.15.2",
+    "tests_run": 48,
+    "test_ids": [
+      "test_comparator.Development.test_absence_not_inferred",
+      "test_comparator.Development.test_bad_evidence_types",
+      "test_comparator.Development.test_bare_number_rejected",
+      "test_comparator.Development.test_boolean_line",
+      "test_comparator.Development.test_clipped_qualifier",
+      "test_comparator.Development.test_conditional",
+      "test_comparator.Development.test_conflict",
+      "test_comparator.Development.test_duplicate",
+      "test_comparator.Development.test_empty_terms_rejected",
+      "test_comparator.Development.test_explicit",
+      "test_comparator.Development.test_frame_guard",
+      "test_comparator.Development.test_framed_imperative",
+      "test_comparator.Development.test_genuine_wrong_citation",
+      "test_comparator.Development.test_heading_reset",
+      "test_comparator.Development.test_hierarchy",
+      "test_comparator.Development.test_issuer_proposal",
+      "test_comparator.Development.test_legacy_quote",
+      "test_comparator.Development.test_list",
+      "test_comparator.Development.test_list_guard",
+      "test_comparator.Development.test_malformed",
+      "test_comparator.Development.test_missing_evidence",
+      "test_comparator.Development.test_negated_proposal",
+      "test_comparator.Development.test_null_date_contract",
+      "test_comparator.Development.test_original_unchanged",
+      "test_comparator.Development.test_outside_proposal",
+      "test_comparator.Development.test_positive_guard",
+      "test_comparator.Development.test_predecessor",
+      "test_comparator.Development.test_present_participle",
+      "test_comparator.Development.test_proposal_imperative",
+      "test_comparator.Development.test_quotation",
+      "test_comparator.Development.test_render_ids",
+      "test_comparator.Development.test_scope_other_sentence",
+      "test_comparator.Development.test_unframed_imperative",
+      "test_comparator.Development.test_unhashable_status",
+      "test_comparator.Development.test_unrelated_sentence",
+      "test_comparator.Development.test_whitespace_quote",
+      "test_comparator.Development.test_wrapped",
+      "test_comparator.Development.test_wrong_scope",
+      "test_boundary.Boundary.test_anonymous_extras",
+      "test_boundary.Boundary.test_every_field_deletion",
+      "test_boundary.Boundary.test_field_type_mutations_never_crash",
+      "test_boundary.Boundary.test_local_error_does_not_reject_other_target",
+      "test_boundary.Boundary.test_malformed_then_valid_duplicate",
+      "test_boundary.Boundary.test_missing_id",
+      "test_boundary.Boundary.test_multiple_malformed_duplicate_audits",
+      "test_boundary.Boundary.test_notice_contract_failures",
+      "test_boundary.Boundary.test_unknown_extra",
+      "test_boundary.Boundary.test_valid_then_malformed_duplicate"
+    ],
+    "passed": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "source_sha256": {
+      "comparator.py": "4bb759a47d7ab76716e1f0fdd8cede31444d45bf676f2e23ccef95cf26b71596",
+      "test_comparator.py": "e0eabd6fbcd9e6066a5093b6973ccf416d57a64afaf90d5bb18a6faab523ff51",
+      "test_boundary.py": "836ed4cda1812d45a86fa394105a49306e284901f464e7378939f02ffa28585b",
+      "verify_development.py": "535499a0f82d60f61d99d56448294c2a4885416fc438e91033b0120de1f8988d"
+    },
+    "model_calls": 0,
+    "candidate_comparisons": 0,
+    "confirmation_accessed": false,
+    "independent_baseline_qualification": false
+  },
+  "four_case_replay": {
+    "kind": "SYNTHETIC_LEGACY_REGRESSION_REPLAY",
+    "cases": [
+      {
+        "case": "malformed_then_valid_duplicate",
+        "packet": {
+          "notice_id": "DEV",
+          "documents": [
+            {
+              "document_id": "D1",
+              "role": "notice",
+              "issuing_authority": "Example Agency",
+              "authority_aliases": [
+                "EA"
+              ],
+              "lines": [
+                "We withdraw Rule A for blue units."
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "target_id": "T001",
+              "aliases": [
+                "Rule A"
+              ],
+              "scope": "Rule A / blue units",
+              "scope_terms": [
+                "blue units"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "notice_id": "DEV",
+          "results": [
+            {
+              "target_id": "T001"
+            },
+            {
+              "target_id": "T001",
+              "status": "withdrawn",
+              "scope": "Rule A / blue units",
+              "issuing_authority": "Example Agency",
+              "effective_date": null,
+              "evidence": [
+                {
+                  "document_id": "D1",
+                  "start_line": 1,
+                  "end_line": 1,
+                  "quote": "We withdraw Rule A for blue units."
+                }
+              ],
+              "reason": "Explicit scoped issuer action"
+            }
+          ]
+        },
+        "expected_notice_processable": false,
+        "observed_notice_processable": {
+          "2.2": true,
+          "2.3": false
+        }
+      },
+      {
+        "case": "valid_then_malformed_duplicate",
+        "packet": {
+          "notice_id": "DEV",
+          "documents": [
+            {
+              "document_id": "D1",
+              "role": "notice",
+              "issuing_authority": "Example Agency",
+              "authority_aliases": [
+                "EA"
+              ],
+              "lines": [
+                "We withdraw Rule A for blue units."
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "target_id": "T001",
+              "aliases": [
+                "Rule A"
+              ],
+              "scope": "Rule A / blue units",
+              "scope_terms": [
+                "blue units"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "notice_id": "DEV",
+          "results": [
+            {
+              "target_id": "T001",
+              "status": "withdrawn",
+              "scope": "Rule A / blue units",
+              "issuing_authority": "Example Agency",
+              "effective_date": null,
+              "evidence": [
+                {
+                  "document_id": "D1",
+                  "start_line": 1,
+                  "end_line": 1,
+                  "quote": "We withdraw Rule A for blue units."
+                }
+              ],
+              "reason": "Explicit scoped issuer action"
+            },
+            {
+              "target_id": "T001"
+            }
+          ]
+        },
+        "expected_notice_processable": false,
+        "observed_notice_processable": {
+          "2.2": true,
+          "2.3": false
+        }
+      },
+      {
+        "case": "anonymous_extra",
+        "packet": {
+          "notice_id": "DEV",
+          "documents": [
+            {
+              "document_id": "D1",
+              "role": "notice",
+              "issuing_authority": "Example Agency",
+              "authority_aliases": [
+                "EA"
+              ],
+              "lines": [
+                "We withdraw Rule A for blue units."
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "target_id": "T001",
+              "aliases": [
+                "Rule A"
+              ],
+              "scope": "Rule A / blue units",
+              "scope_terms": [
+                "blue units"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "notice_id": "DEV",
+          "results": [
+            {
+              "target_id": "T001",
+              "status": "withdrawn",
+              "scope": "Rule A / blue units",
+              "issuing_authority": "Example Agency",
+              "effective_date": null,
+              "evidence": [
+                {
+                  "document_id": "D1",
+                  "start_line": 1,
+                  "end_line": 1,
+                  "quote": "We withdraw Rule A for blue units."
+                }
+              ],
+              "reason": "Explicit scoped issuer action"
+            },
+            null
+          ]
+        },
+        "expected_notice_processable": false,
+        "observed_notice_processable": {
+          "2.2": true,
+          "2.3": false
+        }
+      },
+      {
+        "case": "recognized_local_shape",
+        "packet": {
+          "notice_id": "DEV",
+          "documents": [
+            {
+              "document_id": "D1",
+              "role": "notice",
+              "issuing_authority": "Example Agency",
+              "authority_aliases": [
+                "EA"
+              ],
+              "lines": [
+                "We withdraw Rule A for blue units."
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "target_id": "T001",
+              "aliases": [
+                "Rule A"
+              ],
+              "scope": "Rule A / blue units",
+              "scope_terms": [
+                "blue units"
+              ]
+            }
+          ]
+        },
+        "response": {
+          "notice_id": "DEV",
+          "results": [
+            {
+              "target_id": "T001"
+            }
+          ]
+        },
+        "expected_notice_processable": true,
+        "observed_notice_processable": {
+          "2.2": false,
+          "2.3": true
+        }
+      }
+    ],
+    "source_sha256": {
+      "2.2": "10e0aadd658adb7b02fc2b99aebb8205e0275c870c810fb13be27536cfce193a",
+      "2.3": "4bb759a47d7ab76716e1f0fdd8cede31444d45bf676f2e23ccef95cf26b71596"
+    },
+    "all_four_regressions_demonstrated": true,
+    "candidate_comparisons": 0,
+    "model_calls": 0,
+    "sealed_confirmation_accessed": false
+  },
+  "comparator_patch": "--- v2.2/comparator.py\n+++ v2.3/comparator.py\n@@ -1,4 +1,4 @@\n-\"\"\"Offline v2.2 reference parser. No inference, network, or dispatch entry point.\n+\"\"\"Offline v2.3 reference parser. No inference, network, or dispatch entry point.\n \n Supported: explicit issuer actions on literal scoped objects, wrapped paragraphs,\n and immediately adjacent lists introduced by an explicit action and colon.\n@@ -7,7 +7,7 @@\n import copy\n import re\n \n-VERSION = '2.2.0'\n+VERSION = '2.3.0'\n LABELS = {'upheld', 'withdrawn', 'amended', 'unresolved', 'not_addressed', 'abstain'}\n FIELDS = {'target_id', 'status', 'scope', 'issuing_authority', 'effective_date', 'evidence', 'reason'}\n EV_FIELDS = {'document_id', 'start_line', 'end_line', 'quote'}\n@@ -188,19 +188,24 @@\n def allowlist(p, output):\n     \"\"\"Row-specific structural failures; no inferred repairs or semantic certification.\"\"\"\n     validate_packet(p)\n-    top, rows = [], {}\n+    top, rows, row_audit = [], {}, []\n     if not isinstance(output, dict) or set(output) != {'notice_id', 'results'} or output.get('notice_id') != p['notice_id'] or not isinstance(output.get('results'), list):\n-        return {'accepted': False, 'top_errors': ['shape_or_notice'], 'row_errors': {}}\n+        return {'accepted': False, 'top_errors': ['shape_or_notice'], 'row_errors': {}, 'row_audit': []}\n     expected = {t['target_id']: t for t in p['targets']}\n     docs = {d['document_id']: d for d in p['documents']}\n     seen = []\n     for i, r in enumerate(output['results']):\n         errs = []\n         key = r.get('target_id') if isinstance(r, dict) and isinstance(r.get('target_id'), str) else '@row'+str(i)\n+        # Identity is counted before shape: malformed duplicates cannot disappear.\n+        if isinstance(r, dict) and isinstance(r.get('target_id'), str):\n+            seen.append(r['target_id'])\n+        else:\n+            top.append('unidentified_row')\n         if not isinstance(r, dict) or set(r) != FIELDS:\n-            rows[key] = ['row_shape']\n+            rows.setdefault(key, []).append('row_shape')\n+            row_audit.append({'row_index': i, 'target_id': r.get('target_id') if isinstance(r, dict) else None, 'errors': ['row_shape']})\n             continue\n-        seen.append(key)\n         if key not in expected or not all(isinstance(r[k], str) for k in ('target_id','status','scope','reason')):\n             errs.append('row_types_or_target')\n         if not isinstance(r['status'], str) or r['status'] not in LABELS:\n@@ -229,10 +234,11 @@\n                     errs.append('range'); continue\n                 if not isinstance(ev['quote'], str) or not norm(ev['quote']) or norm(ev['quote']) not in norm('\\n'.join(docs[docid]['lines'][start-1:end])):\n                     errs.append('quote')\n-        rows[key] = errs\n+        rows.setdefault(key, []).extend(errs)\n+        row_audit.append({'row_index': i, 'target_id': r['target_id'], 'errors': errs})\n     if set(seen) != set(expected) or len(seen) != len(set(seen)):\n         top.append('missing_duplicate_or_extra_targets')\n-    return {'accepted': not top and not any(rows.values()), 'top_errors': top, 'row_errors': rows}\n+    return {'accepted': not top and not any(rows.values()), 'top_errors': top, 'row_errors': rows, 'row_audit': row_audit}\n \n \n def safeguard(p, output):\n@@ -259,7 +265,7 @@\n                 verdict = 'verified'\n         result.append(copy.deepcopy(r) if verdict in ('verified','abstention') else entry(t,'abstain'))\n         audit.append({'target_id': t['target_id'], 'verdict': verdict, 'structural_errors': a['row_errors'].get(t['target_id'], [])})\n-    return {'accepted': True, 'output': {'notice_id':p['notice_id'], 'results': result}, 'original':copy.deepcopy(output), 'audit':audit}\n+    return {'accepted': True, 'output': {'notice_id':p['notice_id'], 'results': result}, 'original':copy.deepcopy(output), 'audit':audit, 'structural_audit':a}\n \n \n def render_packet(p):\n",
+  "publication_scope": "Synthetic fixtures, recorded outcomes, source hashes and explanatory diff only. Complete executable comparator/test distribution is not included.",
+  "counter_scope": "Zero model_calls and candidate_comparisons in the development receipts refer only to the earlier synthetic development verification. Subsequent Council design review used paid API calls and an included chat allowance; it did not run the experiment."
+}
