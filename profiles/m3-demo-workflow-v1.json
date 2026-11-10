@@ -1,0 +1,59 @@
+{
+  "schema_version": "m3-workflow-profile-v1",
+  "profile_id": "m3-demo-workflow-v1",
+  "event_schema_version": "m3-log-v1",
+  "sequence_start": 0,
+  "required_event_types": [
+    "run_started",
+    "m2_evidence_generated",
+    "m2_evidence_validated",
+    "tests_skipped",
+    "run_completed"
+  ],
+  "payload_fields": {
+    "run_started": {
+      "required": {
+        "log_path": "string",
+        "m2_artifact_path": "string"
+      },
+      "optional": {
+        "example_status": "string"
+      }
+    },
+    "m2_evidence_generated": {
+      "required": {
+        "artifact_path": "string",
+        "ok": "boolean",
+        "error": "nullable_string"
+      },
+      "optional": {
+        "artifact_sha256": "string"
+      }
+    },
+    "m2_evidence_validated": {
+      "required": {
+        "artifact_path": "string",
+        "ok": "boolean",
+        "validation_passed": "boolean",
+        "error": "nullable_string"
+      },
+      "optional": {
+        "artifact_sha256": "string"
+      }
+    },
+    "tests_skipped": {
+      "required": {
+        "reason": "string",
+        "acceptance_command": "string"
+      },
+      "optional": {}
+    },
+    "run_completed": {
+      "required": {
+        "success": "boolean",
+        "events_emitted": "integer"
+      },
+      "optional": {}
+    }
+  }
+}
