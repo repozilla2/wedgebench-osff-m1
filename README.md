@@ -409,3 +409,4 @@ keith@kaimeragroup.com
 ## Case Studies
 
 - [Applying WedgeBench's firmware verification method to SpecGuard](docs/case-studies/specguard-saas-boundary-conformance.md)
+- [Applying WedgeBench's verification method to Tabula Rasa's comparator](docs/case-studies/tabula-rasa-comparator-boundary-conformance.md)
